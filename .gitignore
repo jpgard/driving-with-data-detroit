@@ -1,0 +1,7 @@
+raw-data
+lstm-data
+freq-pattern-data
+tensor-data
+__pycache__
+*.pyc
+
