@@ -30,7 +30,15 @@ def get_vehicle_maintenance_lookup_df(vehicles_fp=VEHICLES_FP, maintenance_fp=MA
     return vm_df
 
 
-def make_vehicle_sequences(df, v, seq_col='System Description', method="normal"):
+def write_vehicle_sequences_to_file(df, v, seq_col='System Description', method="normal"):
+    """
+    Write a text file containing all vehicle sequences of make_model v in df.
+    :param df:
+    :param v:
+    :param seq_col:
+    :param method:
+    :return:
+    """
     # initialize seq; data structure containing one tuple for each vehicles' job sequences
     seq = []
     outfile = "./freq-pattern-data/seqs/{}_seqs.txt".format(v)
@@ -51,25 +59,30 @@ def make_vehicle_sequences(df, v, seq_col='System Description', method="normal")
     with open(outfile, 'w') as f:
         for s in seq:
             f.write(json.dumps(s) + '\n')
-    return seq
+    return
 
 
-def generate_freq_pattern_dict_by_makemodel():
+def generate_vehicle_maintenance_seq_df(seq_col='System Description'):
     """
     Create a dictionary with key = make_model and value = nested list of maintenance sequences for each unique vehicle of that make/model
-    :param max_year: 
+    :param seq_col: column to generate sequences of
     :return: 
     """
-    # initialize dict to contain nested list of maintenance sequences by make/model
-    maint_dict = defaultdict(list)
+    maint_seqs = list() # tuples of (uid, makemodel, list_of_maintenance_seqs)
     # read, filter, and join data
+    v_df = get_vehicles_lookup_df()
     vm_df = get_vehicle_maintenance_lookup_df()
-    for v in vm_df.make_model.unique():
-        print("Generating vehicle sequences for {}".format(v))
-        s = make_vehicle_sequences(vm_df, v)
-        maint_dict[v] = s
-    return maint_dict
+    for vehicle_make_model in vm_df['make_model'].unique():
+        make_model_uids = vm_df[vm_df['make_model'] == vehicle_make_model]['Unit#'].unique()
+        print("Generating vehicle sequences for {}".format(vehicle_make_model))
+        write_vehicle_sequences_to_file(vm_df, vehicle_make_model)
+        for unit in make_model_uids:
+            unit_seq = vm_df[(vm_df['make_model'] == vehicle_make_model) & (vm_df["Unit#"] == unit)].sort_values('WO_open_date')[seq_col].tolist()
+            maint_seqs.append((unit, vehicle_make_model, unit_seq))
+    maint_seq_df = pd.DataFrame(maint_seqs)
+    maint_seq_df.columns = ["unit", "make_model", "maint_seq"]
+    return maint_seq_df
 
 
 if __name__ == "__main__":
-    generate_freq_pattern_dict_by_makemodel()
+    generate_vehicle_maintenance_seq_df()

@@ -4,7 +4,7 @@ import json
 import os
 from pymining import seqmining
 import pandas as pd
-from freq_pattern_preproc import generate_freq_pattern_dict_by_makemodel, get_vehicles_lookup_df
+from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, get_vehicles_lookup_df
 from nltk import ngrams
 import pandas as pd
 import math
@@ -66,10 +66,10 @@ def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
     return None
 
 
-def i_ratio(maint_dict, vehicle, min_support=180, min_seqs=5, min_length=3):
+def i_ratio(maint_seq_df, vehicle, min_support=180, min_seqs=5, min_length=3):
     """
     Calculate i-ratio of frequent sequences for vehicle in maint_dict.
-    :param maint_dict: dictionary with vehicle : maintenance sequences as entries.
+    :param maint_seq_df: dictionary with vehicle : maintenance sequences as entries.
     :param vehicle: vehicle name to calculate frequent sequence i-ratios for; should match a key in maint_dict.
     :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
     :param min_seqs: minimum number of sequences to return for a given vehicle.
@@ -78,8 +78,8 @@ def i_ratio(maint_dict, vehicle, min_support=180, min_seqs=5, min_length=3):
     """
     output_data = []
     # make 'left' and 'right' data (this is target vehicle, and all vehicles EXCEPT target vehicle respectively)
-    left_data = maint_dict[vehicle]
-    right_data = [entry for make_mod in maint_dict.keys() for entry in maint_dict[make_mod] if make_mod != vehicle]
+    left_data = maint_seq_df[maint_seq_df["make_model"] == vehicle]["maint_seq"]
+    right_data = maint_seq_df[maint_seq_df["make_model"] != vehicle]["maint_seq"]
     left_num_jobs = sum([len(x) for x in left_data])
     right_num_jobs = sum([len(x) for x in right_data])
     left_freq_seqs = []
@@ -112,8 +112,8 @@ def i_ratio(maint_dict, vehicle, min_support=180, min_seqs=5, min_length=3):
     return output_data
 
 
-def create_i_ratio_df(maint_dict, v):
-    results_df = pd.DataFrame(i_ratio(maint_dict=maint_dict, vehicle=v))
+def create_i_ratio_df(maint_seq_df, v):
+    results_df = pd.DataFrame(i_ratio(maint_seq_df=maint_seq_df, vehicle=v))
     results_df.columns = ['Vehicle', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
                           'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
     results_df.sort_values(by=['Left Support', 'P(z)', 'Vehicle'], ascending=[False, True, True], inplace=True)
@@ -123,11 +123,11 @@ def create_i_ratio_df(maint_dict, v):
 def frequentist_dsm_by_makemodel(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_CROWN_VIC'),
                                  outpath='./freq-pattern-data/i_ratios.csv'):
     # note: issue calculating frequent sequences for FREIGHTLIN_M2112V; possibly due to too few makes and identical maintenance of all vehicles
-    maint_dict = generate_freq_pattern_dict_by_makemodel()
+    maint_seq_df = generate_vehicle_maintenance_seq_df()
     vehicles_lookup_df = get_vehicles_lookup_df()
     i_ratio_df_list = list()
     for v in vehicles:
-        i_ratio_df_list.append(create_i_ratio_df(maint_dict, v))
+        i_ratio_df_list.append(create_i_ratio_df(maint_seq_df, v))
     i_ratio_df = pd.concat(i_ratio_df_list)
     i_ratio_df.to_csv(outpath, header=True, index=False)
     print("Output written to {}".format(outpath))
