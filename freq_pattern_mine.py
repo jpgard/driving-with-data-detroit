@@ -111,11 +111,7 @@ def i_ratio(maint_dict, vehicle, min_support = 180, min_seqs = 5, min_length = 3
 
 
 def create_i_ratio_df(maint_dict, v):
-    i_ratio_results = []
-    v_i_ratio_data = i_ratio(maint_dict=maint_dict, vehicle = v)
-    i_ratio_results.append(v_i_ratio_data)
-    flat_results = [y for x in i_ratio_results for y in x]
-    results_df = pd.DataFrame(flat_results)
+    results_df = pd.DataFrame(i_ratio(maint_dict=maint_dict, vehicle = v))
     results_df.columns = ['Vehicle', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support', 'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
     results_df.sort_values(by=['Left Support', 'P(z)', 'Vehicle'], ascending=[False, True, True], inplace = True)
     return results_df
