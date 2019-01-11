@@ -83,7 +83,6 @@ def i_ratio(maint_dict, vehicle, min_support = 180, min_seqs = 5, min_length = 3
     left_freq_seqs = []
     while len(left_freq_seqs) < min_seqs:
         print("Searching for frequent sequences for {} with min support {}".format(vehicle, min_support))
-        # todo: keep only length >= 3
         left_freq_seqs = seqmining.freq_seq_enum(left_data, min_support)
         left_freq_seqs = [x for x in left_freq_seqs if len(x[0]) >= min_length]
         min_support -= 1
@@ -101,7 +100,7 @@ def i_ratio(maint_dict, vehicle, min_support = 180, min_seqs = 5, min_length = 3
             i_ratio = left_seq_norm_support/right_seq_norm_support
         except ZeroDivisionError: # left_seq never occurs in right_data
             i_ratio = MAX_I_RATIO
-        # todo: t test for difference between two population means for left_seq_norm_support and right_seq_norm_support
+        # t test for difference between two population means for left_seq_norm_support and right_seq_norm_support
         counts = np.array([left_seq_support, right_seq_support])
         nobs = np.array([len(left_ngrams), len(right_ngrams)])
         z_stat, p_z = proportions_ztest(counts, nobs, value = 0.05)
