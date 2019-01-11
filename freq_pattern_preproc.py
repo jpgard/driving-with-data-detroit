@@ -6,7 +6,6 @@ from collections import defaultdict
 
 VEHICLES_FP = 'raw-data/vehicles.csv'
 MAINTENANCE_FP = 'raw-data/maintenance.csv'
-CUTOFF_YR = 2010
 
 def make_vehicle_sequences(df, v, seq_col = 'System Description', method = "normal"):
     #initialize seq; data structure containing one tuple for each vehicles' job sequences
@@ -15,8 +14,7 @@ def make_vehicle_sequences(df, v, seq_col = 'System Description', method = "norm
     # filter
     df = df[df['make_model'] == v]
     for uid in df['Unit#'].unique():
-        uid_df = df[df['Unit#'] == uid]
-        uid_df.sort(columns='WO_open_date', inplace = True)
+        uid_df = df[df['Unit#'] == uid].sort_values('WO_open_date')
         uid_seq = uid_df[seq_col].tolist()
         seq.append(uid_seq)
     # write output to text file; one vehicle sequence per row; for spark
@@ -33,12 +31,17 @@ def make_vehicle_sequences(df, v, seq_col = 'System Description', method = "norm
     return seq
 
 
-def main(max_year = 2017):
+def main(min_year = 2010, max_year = 2017):
+    """
+    Create a dictionary with key = make_model and value = nested list of maintenance sequences for each unique vehicle of that make/model
+    :param max_year: 
+    :return: 
+    """
     # initialize dict to contain nested list of maintenance sequences by make/model
     maint_dict = defaultdict(list)
     # read, filter, and join data
     v = pd.read_csv(VEHICLES_FP)
-    v = v[(v.Year >= CUTOFF_YR) & (v.Year <= max_year)]
+    v = v[(v.Year >= min_year) & (v.Year <= max_year)]
     m = pd.read_csv(MAINTENANCE_FP)
     vm_df = pd.merge(v, m, left_on='Unit#', right_on='Unit No')
     vm_df = create_time_feat(vm_df, type = "date", col_name="WO_open_date")

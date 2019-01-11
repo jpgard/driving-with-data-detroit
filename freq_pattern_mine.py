@@ -112,7 +112,6 @@ def i_ratio(maint_dict, vehicle, min_support = 180, min_seqs = 5, min_length = 3
 
 def create_i_ratio_df(maint_dict, v_list):
     i_ratio_results = []
-    # todo
     for v in v_list:
         v_i_ratio_data = i_ratio(maint_dict=maint_dict, vehicle = v)
         i_ratio_results.append(v_i_ratio_data)
