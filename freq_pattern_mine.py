@@ -110,11 +110,10 @@ def i_ratio(maint_dict, vehicle, min_support = 180, min_seqs = 5, min_length = 3
     return output_data
 
 
-def create_i_ratio_df(maint_dict, v_list):
+def create_i_ratio_df(maint_dict, v):
     i_ratio_results = []
-    for v in v_list:
-        v_i_ratio_data = i_ratio(maint_dict=maint_dict, vehicle = v)
-        i_ratio_results.append(v_i_ratio_data)
+    v_i_ratio_data = i_ratio(maint_dict=maint_dict, vehicle = v)
+    i_ratio_results.append(v_i_ratio_data)
     flat_results = [y for x in i_ratio_results for y in x]
     results_df = pd.DataFrame(flat_results)
     results_df.columns = ['Vehicle', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support', 'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
@@ -125,7 +124,10 @@ def create_i_ratio_df(maint_dict, v_list):
 def main(v_list = ['HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_CROWN_VIC'], outpath = './freq-pattern-data/i_ratios.csv'):
     # note: issue calculating frequent sequences for FREIGHTLIN_M2112V; possibly due to too few makes and identical maintenance of all vehicles
     maint_dict = freq_pattern_preproc()
-    i_ratio_df = create_i_ratio_df(maint_dict=maint_dict, v_list=v_list)
+    i_ratio_df_list = list()
+    for v in v_list:
+        i_ratio_df_list.append(create_i_ratio_df(maint_dict, v))
+    i_ratio_df = pd.concat(i_ratio_df_list)
     i_ratio_df.to_csv(outpath, header = True, index = False)
     print("Output written to {}".format(outpath))
 
