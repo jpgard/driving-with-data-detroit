@@ -6,6 +6,28 @@ from collections import defaultdict
 
 VEHICLES_FP = 'raw-data/vehicles.csv'
 MAINTENANCE_FP = 'raw-data/maintenance.csv'
+MIN_YEAR = 2010
+MAX_YEAR = 2017
+
+def get_vehicles_lookup_df(vehicles_fp = VEHICLES_FP, min_year=MIN_YEAR, max_year=MAX_YEAR):
+    v = pd.read_csv(vehicles_fp)
+    v = v[(v.Year >= min_year) & (v.Year <= max_year)]
+    return v
+
+
+def get_maintenance_lookup_df(maintenance_fp=MAINTENANCE_FP):
+    return pd.read_csv(maintenance_fp)
+
+
+def get_vehicle_maintenance_lookup_df(vehicles_fp=VEHICLES_FP, maintenance_fp=MAINTENANCE_FP, min_year=MIN_YEAR, max_year=MAX_YEAR):
+    v = get_vehicles_lookup_df(vehicles_fp, min_year=min_year, max_year=max_year)
+    m = get_maintenance_lookup_df(maintenance_fp)
+    vm_df = pd.merge(v, m, left_on='Unit#', right_on='Unit No')
+    vm_df = create_time_feat(vm_df, type="date", col_name="WO_open_date")
+    vm_df['Model'] = vm_df['Model'].apply(lambda x: re.sub('[/()`?]', '', x))
+    vm_df["make_model"] = vm_df['Make'].map(lambda x: str(x) + "_") + vm_df['Model'].map(
+        lambda x: str(x).strip().replace(' ', '_'))
+    return vm_df
 
 
 def make_vehicle_sequences(df, v, seq_col='System Description', method="normal"):
@@ -32,7 +54,7 @@ def make_vehicle_sequences(df, v, seq_col='System Description', method="normal")
     return seq
 
 
-def generate_freq_pattern_dict_by_makemodel(min_year=2010, max_year=2017):
+def generate_freq_pattern_dict_by_makemodel():
     """
     Create a dictionary with key = make_model and value = nested list of maintenance sequences for each unique vehicle of that make/model
     :param max_year: 
@@ -41,14 +63,7 @@ def generate_freq_pattern_dict_by_makemodel(min_year=2010, max_year=2017):
     # initialize dict to contain nested list of maintenance sequences by make/model
     maint_dict = defaultdict(list)
     # read, filter, and join data
-    v = pd.read_csv(VEHICLES_FP)
-    v = v[(v.Year >= min_year) & (v.Year <= max_year)]
-    m = pd.read_csv(MAINTENANCE_FP)
-    vm_df = pd.merge(v, m, left_on='Unit#', right_on='Unit No')
-    vm_df = create_time_feat(vm_df, type="date", col_name="WO_open_date")
-    vm_df['Model'] = vm_df['Model'].apply(lambda x: re.sub('[/()`?]', '', x))
-    vm_df["make_model"] = vm_df['Make'].map(lambda x: str(x) + "_") + vm_df['Model'].map(
-        lambda x: str(x).strip().replace(' ', '_'))
+    vm_df = get_vehicle_maintenance_lookup_df()
     for v in vm_df.make_model.unique():
         print("Generating vehicle sequences for {}".format(v))
         s = make_vehicle_sequences(vm_df, v)
