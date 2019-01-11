@@ -4,12 +4,13 @@ import json
 import os
 from pymining import seqmining
 import pandas as pd
-from freq_pattern_preproc import main as freq_pattern_preproc
+from freq_pattern_preproc import generate_freq_pattern_dict_by_makemodel
 from nltk import ngrams
 import pandas as pd
 import math
 from statsmodels.stats.proportion import proportions_ztest
 import numpy as np
+from sklearn.mixture import BayesianGaussianMixture
 
 # set value for i_ratio when sequence never occurs for other vehicles
 MAX_I_RATIO = 10000
@@ -119,10 +120,10 @@ def create_i_ratio_df(maint_dict, v):
     return results_df
 
 
-def main(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_CROWN_VIC'),
-         outpath='./freq-pattern-data/i_ratios.csv'):
+def frequentist_dsm_by_makemodel(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_CROWN_VIC'),
+                                 outpath='./freq-pattern-data/i_ratios.csv'):
     # note: issue calculating frequent sequences for FREIGHTLIN_M2112V; possibly due to too few makes and identical maintenance of all vehicles
-    maint_dict = freq_pattern_preproc()
+    maint_dict = generate_freq_pattern_dict_by_makemodel()
     i_ratio_df_list = list()
     for v in vehicles:
         i_ratio_df_list.append(create_i_ratio_df(maint_dict, v))
@@ -131,5 +132,28 @@ def main(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_C
     print("Output written to {}".format(outpath))
 
 
+def compute_cluster_membership(A):
+    """
+    Using BGMM, compute two clusters (in-group = 1, out-group = 1) based on each individual column of A.
+    :param A: PARAFAC factor loading matrix A.
+    :return: np.array with binary values, which can be interpreted as either cluster labels or in-group membership indicators.
+    """
+    n, R = A.shape
+    cluster_membership = np.full((n, R), np.nan)
+    for r in range(R):
+        bgmm = BayesianGaussianMixture(n_components=2)
+        loading_vector = np.reshape(A.iloc[:, r].values, (-1, 1))
+        labels = bgmm.fit_predict(loading_vector)
+        if sum(labels) > n // 2:  # coerce label to be minority group
+            labels = 1 - labels
+        cluster_membership[:, r] = labels
+    return cluster_membership
+
+def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt"):
+    A = pd.read_csv(A_matrix_fp)
+    cluster_membership_matrix = compute_cluster_membership(A)
+    # todo: write to CSV; validate these with some plotting in R; then compute frequent sequences via BDSM
+
+
 if __name__ == "__main__":
-    main()
+    frequentist_dsm_by_makemodel()

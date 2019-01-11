@@ -32,7 +32,7 @@ def make_vehicle_sequences(df, v, seq_col='System Description', method="normal")
     return seq
 
 
-def main(min_year=2010, max_year=2017):
+def generate_freq_pattern_dict_by_makemodel(min_year=2010, max_year=2017):
     """
     Create a dictionary with key = make_model and value = nested list of maintenance sequences for each unique vehicle of that make/model
     :param max_year: 
@@ -57,4 +57,4 @@ def main(min_year=2010, max_year=2017):
 
 
 if __name__ == "__main__":
-    main()
+    generate_freq_pattern_dict_by_makemodel()
