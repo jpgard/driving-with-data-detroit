@@ -66,25 +66,23 @@ def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
     return None
 
 
-def i_ratio(maint_seq_df, vehicle, min_support=180, min_seqs=5, min_length=3):
+def i_ratio(maint_seq_df, uids, vehicle_name, min_support=180, min_seqs=5, min_length=3):
     """
     Calculate i-ratio of frequent sequences for vehicle in maint_dict.
     :param maint_seq_df: dictionary with vehicle : maintenance sequences as entries.
-    :param vehicle: vehicle name to calculate frequent sequence i-ratios for; should match a key in maint_dict.
+    :param vehicle_name: vehicle name to calculate frequent sequence i-ratios for; should match a key in maint_dict.
     :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
     :param min_seqs: minimum number of sequences to return for a given vehicle.
     :param min_length: minimum length of frequent sequences to consider.
     :return: 
     """
     output_data = []
-    # make 'left' and 'right' data (this is target vehicle, and all vehicles EXCEPT target vehicle respectively)
-    left_data = maint_seq_df[maint_seq_df["make_model"] == vehicle]["maint_seq"]
-    right_data = maint_seq_df[maint_seq_df["make_model"] != vehicle]["maint_seq"]
-    left_num_jobs = sum([len(x) for x in left_data])
-    right_num_jobs = sum([len(x) for x in right_data])
+    # make 'left' and 'right' data (this is target vehicle_name, and all vehicles EXCEPT target vehicle_name respectively)
+    left_data = maint_seq_df[maint_seq_df["unit"].isin(uids)]["maint_seq"]
+    right_data = maint_seq_df[~maint_seq_df["unit"].isin(uids)]["maint_seq"]
     left_freq_seqs = []
     while len(left_freq_seqs) < min_seqs:
-        print("Searching for frequent sequences for {} with min support {}".format(vehicle, min_support))
+        print("Searching for frequent sequences for {} with min support {}".format(vehicle_name, min_support))
         left_freq_seqs = seqmining.freq_seq_enum(left_data, min_support)
         left_freq_seqs = [x for x in left_freq_seqs if len(x[0]) >= min_length]
         min_support -= 1
@@ -106,14 +104,14 @@ def i_ratio(maint_seq_df, vehicle, min_support=180, min_seqs=5, min_length=3):
         counts = np.array([left_seq_support, right_seq_support])
         nobs = np.array([len(left_ngrams), len(right_ngrams)])
         z_stat, p_z = proportions_ztest(counts, nobs, value=0.05)
-        seq_data = (vehicle, seq, left_seq_support, round(left_seq_norm_support, 4), right_seq_support,
+        seq_data = (vehicle_name, seq, left_seq_support, round(left_seq_norm_support, 4), right_seq_support,
                     round(right_seq_norm_support, 4), round(i_ratio, 2), round(z_stat, 1), round(p_z, 4))
         output_data.append(seq_data)
     return output_data
 
 
-def create_i_ratio_df(maint_seq_df, v):
-    results_df = pd.DataFrame(i_ratio(maint_seq_df=maint_seq_df, vehicle=v))
+def create_i_ratio_df(maint_seq_df, uids, vehicle_name):
+    results_df = pd.DataFrame(i_ratio(maint_seq_df, uids, vehicle_name))
     results_df.columns = ['Vehicle', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
                           'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
     results_df.sort_values(by=['Left Support', 'P(z)', 'Vehicle'], ascending=[False, True, True], inplace=True)
@@ -127,7 +125,8 @@ def frequentist_dsm_by_makemodel(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 
     vehicles_lookup_df = get_vehicles_lookup_df()
     i_ratio_df_list = list()
     for v in vehicles:
-        i_ratio_df_list.append(create_i_ratio_df(maint_seq_df, v))
+        uids = vehicles_lookup_df[vehicles_lookup_df["make_model"] == v]["Unit#"].tolist()
+        i_ratio_df_list.append(create_i_ratio_df(maint_seq_df, uids, v))
     i_ratio_df = pd.concat(i_ratio_df_list)
     i_ratio_df.to_csv(outpath, header=True, index=False)
     print("Output written to {}".format(outpath))

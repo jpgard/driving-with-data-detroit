@@ -12,6 +12,8 @@ MAX_YEAR = 2017
 def get_vehicles_lookup_df(vehicles_fp = VEHICLES_FP, min_year=MIN_YEAR, max_year=MAX_YEAR):
     v = pd.read_csv(vehicles_fp)
     v = v[(v.Year >= min_year) & (v.Year <= max_year)]
+    v["make_model"] = v['Make'].map(lambda x: str(x) + "_") + v['Model'].map(
+        lambda x: str(x).strip().replace(' ', '_'))
     return v
 
 
