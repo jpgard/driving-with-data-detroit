@@ -66,26 +66,29 @@ def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
     return None
 
 
-def i_ratio(maint_seq_df, uids, vehicle_name, min_support=180, min_seqs=5, min_length=3):
+def i_ratio(maint_seq_df, uids, identifier, min_support=180, min_seqs=5, min_length=3):
     """
     Calculate i-ratio of frequent sequences for vehicle in maint_dict.
     :param maint_seq_df: dictionary with vehicle : maintenance sequences as entries.
-    :param vehicle_name: vehicle name to calculate frequent sequence i-ratios for; should match a key in maint_dict.
+    :param identifier: vehicle name or other identifier.
     :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
     :param min_seqs: minimum number of sequences to return for a given vehicle.
     :param min_length: minimum length of frequent sequences to consider.
     :return: 
     """
     output_data = []
-    # make 'left' and 'right' data (this is target vehicle_name, and all vehicles EXCEPT target vehicle_name respectively)
+    # make 'left' and 'right' data (this is target identifier, and all vehicles EXCEPT target identifier respectively)
     left_data = maint_seq_df[maint_seq_df["unit"].isin(uids)]["maint_seq"]
     right_data = maint_seq_df[~maint_seq_df["unit"].isin(uids)]["maint_seq"]
     left_freq_seqs = []
     while len(left_freq_seqs) < min_seqs:
-        print("Searching for frequent sequences for {} with min support {}".format(vehicle_name, min_support))
+        print("Searching for frequent sequences for {} with min support {}".format(identifier, min_support))
         left_freq_seqs = seqmining.freq_seq_enum(left_data, min_support)
         left_freq_seqs = [x for x in left_freq_seqs if len(x[0]) >= min_length]
         min_support -= 1
+        if min_support == 0:
+            print("[WARNING] Failed to find frequent sequences for {}".format(identifier))
+            return None
     for left_seq in left_freq_seqs:
         seq = left_seq[0]
         left_seq_support = left_seq[1]
@@ -104,22 +107,31 @@ def i_ratio(maint_seq_df, uids, vehicle_name, min_support=180, min_seqs=5, min_l
         counts = np.array([left_seq_support, right_seq_support])
         nobs = np.array([len(left_ngrams), len(right_ngrams)])
         z_stat, p_z = proportions_ztest(counts, nobs, value=0.05)
-        seq_data = (vehicle_name, seq, left_seq_support, round(left_seq_norm_support, 4), right_seq_support,
+        seq_data = (identifier, seq, left_seq_support, round(left_seq_norm_support, 4), right_seq_support,
                     round(right_seq_norm_support, 4), round(i_ratio, 2), round(z_stat, 1), round(p_z, 4))
         output_data.append(seq_data)
     return output_data
 
 
-def create_i_ratio_df(maint_seq_df, uids, vehicle_name):
-    results_df = pd.DataFrame(i_ratio(maint_seq_df, uids, vehicle_name))
-    results_df.columns = ['Vehicle', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
-                          'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
-    results_df.sort_values(by=['Left Support', 'P(z)', 'Vehicle'], ascending=[False, True, True], inplace=True)
-    return results_df
+def create_i_ratio_df(maint_seq_df, uids, identifier):
+    """
+
+    :param maint_seq_df:
+    :param uids:
+    :param identifier:
+    :return:
+    """
+    i_ratio_results = i_ratio(maint_seq_df, uids, identifier)
+    if i_ratio_results: # i_ratio() returns no results if frequent sequences cannot be found
+        results_df = pd.DataFrame(i_ratio_results)
+        results_df.columns = ['Identifier', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
+                              'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
+        results_df.sort_values(by=['Left Support', 'P(z)', 'Identifier'], ascending=[False, True, True], inplace=True)
+        return results_df
 
 
 def frequentist_dsm_by_makemodel(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_CROWN_VIC'),
-                                 outpath='./freq-pattern-data/i_ratios.csv'):
+                                 outpath='./freq-pattern-data/frquentist_i_ratios_by_makemodel.csv'):
     # note: issue calculating frequent sequences for FREIGHTLIN_M2112V; possibly due to too few makes and identical maintenance of all vehicles
     maint_seq_df = generate_vehicle_maintenance_seq_df()
     vehicles_lookup_df = get_vehicles_lookup_df()
@@ -155,13 +167,20 @@ def compute_cluster_membership(A, thresh=0.99):
 
 def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt", ):
     A = pd.read_csv(A_matrix_fp, header=None)
-    # makemodel =
+    vehicles_lookup_df = get_vehicles_lookup_df()
+    maint_seq_df = generate_vehicle_maintenance_seq_df()
+    n,R = A.shape
     cluster_membership_matrix = compute_cluster_membership(A)
     np.savetxt("./tensor-data/month_year/bgmm_cluster_membership.txt", cluster_membership_matrix)
-    import ipdb;ipdb.set_trace()
-    # todo: write to CSV; validate these with some plotting in R; then compute frequent sequences via BDSM
+    for r in range(R):
+        in_group_uids = vehicles_lookup_df.iloc[cluster_membership_matrix[:,r] == 1,:]["Unit#"].tolist()
+        identifier = "PARAFAC_{}".format(r)
+        i_ratio_df = create_i_ratio_df(maint_seq_df, in_group_uids, identifier)
+        if i_ratio_df is not None:
+            outpath ='./freq-pattern-data/i_ratios_PARAFAC_r{}.csv'.format(r)
+            i_ratio_df.to_csv(outpath, header=True, index=False)
 
 
 if __name__ == "__main__":
-    # bayesian_dsm_from_parafac()
+    bayesian_dsm_from_parafac()
     frequentist_dsm_by_makemodel()
