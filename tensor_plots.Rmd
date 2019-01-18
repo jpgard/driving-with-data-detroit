@@ -37,6 +37,7 @@ if (analysis_type == 'month_year_log'){
     B = read.csv("./tensor-data/month_year/B_monthyear_log.txt", header = FALSE, row.names = make.names(sd_lkp$variable))
     C = read.csv("./tensor-data/month_year/C_monthyear_log.txt", header = FALSE)
     lambda = read.csv("./tensor-data/month_year/lambda_monthyear_log.txt", header = FALSE)
+    cluster_membership_matrix = read.csv("./tensor-data/month_year/bgmm_ingroup.txt", sep = " ", header = F)
 }
 
 ```
@@ -45,6 +46,7 @@ if (analysis_type == 'month_year_log'){
 library(ggplot2)
 library(gridExtra)
 library(ggrepel)
+library(ggpubr)
 A_THRESH = 0.2
 B_THRESH = 0.2
 OUT_DEVICE = "png" # set to pdf if pdf is preferred
@@ -56,19 +58,36 @@ year_axis_labs = c("0", "1", "2", "3", "4", "5", "6", "7")
 
 for(i in seq(ncol(A))) {
     message(paste0("Generating plot for component ", i))
-     a_dept_plot = ggplot(A, aes(x = factor(row.names(A)), y = A[,i], fill = temp$Dept.Desc)) + geom_bar(stat = "identity") + theme(plot.title = element_text(hjust = 0.5, size = rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = rel(0.4)), legend.key.size = unit(0.15, units = "cm"),legend.position=c(0.98,0.2), legend.justification=c(1,0)) + ylim(0,1) + ggtitle("Vehicle by Department") + labs(fill = "Department") + ylab("Factor Weight") # + geom_text(aes(label=ifelse(A[,i] > A_THRESH, row.names(A), '')), angle = 45, hjust = 0)
-     # a_make_plot = ggplot(A, aes(x = factor(row.names(A)), y = A[,i], fill = temp$Make)) + geom_bar(stat = "identity") + geom_text(aes(label=ifelse(A[,i] > A_THRESH, row.names(A), '')), angle = 45, hjust = 0) + theme(plot.title = element_text(hjust = 0.5),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = rel(0.3)), legend.key.size = unit(0.15, units = "cm"),legend.position=c(1,0), legend.justification=c(1,0)) + ylim(0,1) + ggtitle("Vehicle by Make") + labs(fill = "Make") + ylab("Factor Weight")
-     # a_year_plot = ggplot(A, aes(x = factor(row.names(A)), y = A[,i], fill = temp$Year)) + geom_bar(stat = "identity") + geom_text(aes(label=ifelse(A[,i] > A_THRESH, row.names(A), '')), angle = 45, hjust = 0) + theme(plot.title = element_text(hjust = 0.5),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = rel(0.3)), legend.key.size = unit(0.15, units = "cm"),legend.position=c(1,0), legend.justification=c(1,0)) + ylim(0,1) + ggtitle("Vehicle by Model Year") + labs(fill = "Vehicle Year") + ylab("Factor Weight")
+
+     a_plot = ggplot(A, aes(x = factor(row.names(A)), y = A[,i], fill = temp$Dept.Desc)) + 
+         geom_bar(stat = "identity", aes(alpha=factor(cluster_membership_matrix[,i] == 0))) + 
+         theme(plot.title = element_text(hjust = 0.5, size = rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = rel(0.4)), legend.key.size = unit(0.15, units = "cm"),legend.position=c(0.98,0.15), legend.justification=c(1,0)) + 
+         ylim(0,1) + 
+         ggtitle("Vehicle") + 
+         labs(fill = "Department") + 
+         guides(alpha = FALSE) +
+         ylab("Factor Weight") +
+         scale_alpha_discrete(range=c(1, 0.4))
      b_plot = ggplot(B, aes(x = factor(row.names(B)), y = B[,i])) + geom_bar(stat = "identity") + geom_text_repel(aes(label=ifelse(B[,i] > B_THRESH, gsub("\\.+", ' ', row.names(B)), '')), nudge_y = 0.05) + theme(plot.title = element_text(hjust = 0.5, size =rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) + ylim(0,1) + ggtitle("System Description") + ylab("Factor Weight")
      if (analysis_type == 'month_year_log'){
-         c_plot = ggplot(C, aes(x = factor(row.names(C)), y = C[,i])) + geom_bar(stat = "identity") + theme(plot.title = element_text(hjust = 0.5, size = rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.x = element_text(angle=90, hjust=1, vjust=1)) + ylim(0,1) + ggtitle("Year/Month") + ylab("Factor Weight") + scale_x_discrete(labels = month_year_axis_labs)
+         c_plot = ggplot(C, aes(x = factor(row.names(C)), y = C[,i])) + geom_bar(stat = "identity") + 
+             theme(plot.title = element_text(hjust = 0.5, size = rel(2)),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1),
+                   panel.background = element_blank(), 
+                   axis.ticks.x = element_blank(), 
+                   axis.title.x = element_blank(), 
+                   axis.text.x = element_text(angle=90, hjust=1, vjust=1)) + 
+             ylim(0,1) + 
+             ggtitle("Year/Month") + 
+             ylab("Factor Weight") + 
+             scale_x_discrete(labels = month_year_axis_labs)
      }
      if (analysis_type == 'vehicle_year_log'){
          c_plot = ggplot(C, aes(x = factor(row.names(C)), y = C[,i])) + geom_bar(stat = "identity") + theme(plot.title = element_text(hjust = 0.5, size = rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.x = element_text(angle=90, hjust=1, vjust=1)) + ylim(0,1) + ggtitle("Vehicle Lifetime Year") + ylab("Factor Weight") + scale_x_discrete(labels = year_axis_labs)
      }
-     # g = arrangeGrob(a_dept_plot, a_make_plot, a_year_plot, b_plot, c_plot, nrow = 5, ncol = 1) 
-     g = arrangeGrob(a_dept_plot, b_plot, c_plot, nrow = 3, ncol = 1) 
-     outfile = paste0('img/3_way_plots/', subfolder, '/3_way_plot_factor_pubversion_', i, '.', OUT_DEVICE)
+     g = arrangeGrob(a_plot, b_plot, c_plot, nrow = 3, ncol = 1) 
+     g = ggarrange(a_plot, b_plot, c_plot, nrow=3, common.legend = TRUE, legend = "bottom")
+     outfile = paste0('img/3_way_plots/', subfolder, '/3_way_plot_factor_update_', i, '.', OUT_DEVICE)
      ggsave(outfile, g, width = 10.9, height = 6.6, units = "in", device = OUT_DEVICE)
  }
 ```
