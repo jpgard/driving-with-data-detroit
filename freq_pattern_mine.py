@@ -12,6 +12,7 @@ from statsmodels.stats.proportion import proportions_ztest
 import numpy as np
 from sklearn.mixture import BayesianGaussianMixture
 import matplotlib
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pymc3 as pm
@@ -210,7 +211,8 @@ def compute_cluster_membership(A):
     return cluster_membership
 
 
-def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt", bgmm_matrix_fp="./tensor-data/month_year/bgmm_ingroup.txt"):
+def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
+                              bgmm_matrix_fp="./tensor-data/month_year/bgmm_ingroup.txt"):
     A = pd.read_csv(A_matrix_fp, header=None)
     vehicles_lookup_df = get_vehicles_lookup_df()
     maint_seq_df = generate_vehicle_maintenance_seq_df()
@@ -225,8 +227,59 @@ def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_
         if i_ratio_df is not None:
             outpath = './freq-pattern-data/i_ratios_PARAFAC_r{}.csv'.format(r)
             i_ratio_df.to_csv(outpath, header=True, index=False)
+    return
+
+
+def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<END>"):
+    """
+    Concatenate all subsequences in seqs into a single sequence, with start_token and end_token indicating the beginning and ending of subsequences.
+    :param seqs: iterable of sequences.
+    :param start_token: token to use for subequence start.
+    :param end_token: token to use for sobsequence end.
+    :return:
+    """
+    out_seq = []
+    for subseq in seqs:
+        out_seq += [start_token] + ["<{}>".format(item) for item in subseq] + [end_token]
+    return out_seq
+
+
+def compute_sequence_tfidf(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
+                           bgmm_matrix_fp="./tensor-data/month_year/bgmm_ingroup.txt", max_ngram=5):
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    # a function to use sklearn preprocessor; http://www.davidsbatista.net/blog/2018/02/28/TfidfVectorizer/
+    def dummy_fun(doc):
+        return doc
+    # input data
+    A = pd.read_csv(A_matrix_fp, header=None)
+    n, R = A.shape
+    vehicles_lookup_df = get_vehicles_lookup_df()
+    maint_seq_df = generate_vehicle_maintenance_seq_df()
+    cluster_membership_matrix = np.loadtxt(bgmm_matrix_fp)
+    # compute tfidf for each r
+    for r in range(R):
+        in_group_uids = vehicles_lookup_df.iloc[cluster_membership_matrix[:, r] == 1, :]["Unit#"].tolist()
+        # concatenate INGROUP and OUTGROUP into a single sequence, adding a "START" and "END" token
+        in_group_seqs = maint_seq_df[maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
+        in_group_full_seq = concatenate_maintenance_sequences(in_group_seqs)
+        out_group_seqs = maint_seq_df[~maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
+        out_group_full_seq = concatenate_maintenance_sequences(out_group_seqs)
+        vectorizer = TfidfVectorizer(ngram_range=(1, max_ngram), norm="l2", token_pattern=None, tokenizer=dummy_fun, preprocessor=dummy_fun)
+        X = vectorizer.fit_transform([in_group_full_seq, out_group_full_seq])
+        tfidf = pd.DataFrame(data=X.T.toarray(), index=vectorizer.get_feature_names()).reset_index()
+        tfidf.columns = ["feature", "in_group", "out_group"]
+        tfidf["ratio"] = tfidf["in_group"]/tfidf["out_group"]
+        tfidf["diff"] = tfidf["in_group"]-tfidf["out_group"]
+        tfidf["abs_diff"] = abs(tfidf["diff"])
+        # tfidf[tfidf["ratio"] != float("inf")].sort_values("ratio", ascending=False)
+        # tfidf[tfidf["ratio"] != float("inf")].sort_values("diff", ascending=False)
+        outpath = './freq-pattern-data/tfidf_PARAFAC_r{}.csv'.format(r)
+        print("[INFO] writing tfidf matrix to {}".format(outpath))
+        tfidf.sort_values("abs_diff", ascending=False).to_csv(outpath, header=True, index=False)
+        return
 
 
 if __name__ == "__main__":
-    bayesian_dsm_from_parafac()
-    frequentist_dsm_by_makemodel()
+    # bayesian_dsm_from_parafac()
+    # frequentist_dsm_by_makemodel()
+    compute_sequence_tfidf()
