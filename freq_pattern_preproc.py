@@ -2,7 +2,6 @@ import pandas as pd
 import json
 from tensor_utils import create_time_feat
 import re
-from collections import defaultdict
 
 VEHICLES_FP = 'raw-data/vehicles.csv'
 MAINTENANCE_FP = 'raw-data/maintenance.csv'
@@ -70,22 +69,31 @@ def write_vehicle_sequences_to_file(df, v, seq_col='System Description', method=
     return
 
 
-def generate_vehicle_maintenance_seq_df(seq_col='System Description'):
+def generate_vehicle_maintenance_seq_df(seq_col='System Description', write_to_file=True, filter_col=None, filter_values=None):
     """
     Create a dictionary with key = make_model and value = nested list of maintenance sequences for each unique vehicle of that make/model
     :param seq_col: column to generate sequences of
+    :param write_to_file: indicator for whether sequences should be written to a text file
+    :param filter_col: column name to use for filtering; with filter_values
+    :param filter_values: values used to filter filter_col; only entries with one of filter_values will be kept.
     :return: 
     """
     maint_seqs = list() # tuples of (uid, makemodel, list_of_maintenance_seqs)
     # read, filter, and join data
-    v_df = get_vehicles_lookup_df()
     vm_df = get_vehicle_maintenance_lookup_df()
+    print("[INFO] generating vehicle sequences")
     for vehicle_make_model in vm_df['make_model'].unique():
         make_model_uids = vm_df[vm_df['make_model'] == vehicle_make_model]['Unit#'].unique()
-        print("Generating vehicle sequences for {}".format(vehicle_make_model))
-        write_vehicle_sequences_to_file(vm_df, vehicle_make_model)
+        if write_to_file:
+            write_vehicle_sequences_to_file(vm_df, vehicle_make_model)
         for unit in make_model_uids:
-            unit_seq = vm_df[(vm_df['make_model'] == vehicle_make_model) & (vm_df["Unit#"] == unit)].sort_values('WO_open_date')[seq_col].tolist()
+            if not filter_col:
+                unit_seq = vm_df[(vm_df['make_model'] == vehicle_make_model) & (vm_df["Unit#"] == unit)].sort_values('WO_open_date')[seq_col].tolist()
+            else:
+                assert filter_values, "must specify filter_values if using filter_col"
+                print("[INFO] filtering sequences on {}".format(filter_col))
+                unit_seq = vm_df[(vm_df['make_model'] == vehicle_make_model) & (vm_df["Unit#"] == unit) & (vm_df[filter_col].isin(filter_values))].sort_values(
+                    'WO_open_date')[seq_col].tolist()
             maint_seqs.append((unit, vehicle_make_model, unit_seq))
     maint_seq_df = pd.DataFrame(maint_seqs)
     maint_seq_df.columns = ["unit", "make_model", "maint_seq"]
