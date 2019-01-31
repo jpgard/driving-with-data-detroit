@@ -17,6 +17,10 @@ def get_vehicles_lookup_df(vehicles_fp = VEHICLES_FP, min_year=MIN_YEAR, max_yea
     return v
 
 
+def get_system_description_lookup_df(system_description_fp="./tensor-data/vehicle_year/SystemDescription_vehicle_year_lkp.csv"):
+    return pd.read_csv(system_description_fp)
+
+
 def get_maintenance_lookup_df(maintenance_fp=MAINTENANCE_FP):
     return pd.read_csv(maintenance_fp)
 
