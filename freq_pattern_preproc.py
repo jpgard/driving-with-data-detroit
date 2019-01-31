@@ -91,7 +91,6 @@ def generate_vehicle_maintenance_seq_df(seq_col='System Description', write_to_f
                 unit_seq = vm_df[(vm_df['make_model'] == vehicle_make_model) & (vm_df["Unit#"] == unit)].sort_values('WO_open_date')[seq_col].tolist()
             else:
                 assert filter_values, "must specify filter_values if using filter_col"
-                print("[INFO] filtering sequences on {}".format(filter_col))
                 unit_seq = vm_df[(vm_df['make_model'] == vehicle_make_model) & (vm_df["Unit#"] == unit) & (vm_df[filter_col].isin(filter_values))].sort_values(
                     'WO_open_date')[seq_col].tolist()
             maint_seqs.append((unit, vehicle_make_model, unit_seq))
