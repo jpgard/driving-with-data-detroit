@@ -47,7 +47,6 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
     diff_in_posterior_means = abs(posterior_mean[1] - posterior_mean[0])
     trace_theta_diff_in_rope = np.apply_along_axis(lambda x: abs(x[0] - x[1]) <= rope, 1, theta_posterior_samps)
     p_rope = sum(trace_theta_diff_in_rope) / float(len(theta_posterior_samps))
-    import ipdb;ipdb.set_trace()
     return diff_in_posterior_means, p_rope
 
 
@@ -231,7 +230,6 @@ def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_
         right_seqs = maint_seq_df[~maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
         identifier = "PARAFAC_{}".format(r)
         i_ratio_df = create_i_ratio_df(left_seqs, right_seqs, in_group_systems, identifier, method="bayesian")
-        import ipdb;ipdb.set_trace()
         if i_ratio_df is not None:
             outpath = './freq-pattern-data/i_ratios_PARAFAC_r{}.csv'.format(r)
             i_ratio_df.to_csv(outpath, header=True, index=False)
