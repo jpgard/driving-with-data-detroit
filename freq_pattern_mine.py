@@ -4,7 +4,7 @@ import json
 import os
 from pymining import seqmining
 import pandas as pd
-from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, get_vehicles_lookup_df
+from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, get_vehicles_lookup_df, get_system_description_lookup_df
 from nltk import ngrams
 import pandas as pd
 import math
@@ -22,7 +22,7 @@ import theano.tensor as tt
 MAX_I_RATIO = 10000
 
 
-def bayesian_prop_test(successes, n, rope=0.1, plot=False):
+def bayesian_prop_test(successes, n, rope=0.01, plot=False):
     """
     Computes the posterior probability of a difference in means between two groups.
     :param successes: iterable of success counts for each group.
@@ -31,13 +31,11 @@ def bayesian_prop_test(successes, n, rope=0.1, plot=False):
     :return: posterior probability that the means of the two groups are not the same; that is: P(mu_1 != mu_2 | data)
     """
     ## for testing:
-    successes = [50, 25]
-    n = [140, 100]
     with pm.Model() as model:
         theta = pm.Beta("theta", alpha=1, beta=1,
                         shape=len(n))  # see https://docs.pymc.io/notebooks/GLM-hierarchical-binominal-model.html
         p = pm.Binomial("successes", p=theta, observed=successes, n=n)
-        trace = pm.sample(1000, tune=500,
+        trace = pm.sample(3000, tune=1000, # note: these converge relatively quickly; not much sampling needed
                           cores=1)  # note: must set cores=1 because using Python2.7; see https://github.com/pymc-devs/pymc3/issues/3255
     if plot:
         pm.plots.plot_posterior(trace)
@@ -101,15 +99,18 @@ def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
     return None
 
 
-def i_ratio(maint_seq_df, uids, identifier, method, min_support=180, min_seqs=5, min_length=3):
+def i_ratio(maint_seq_df, uids, systems, identifier, method, min_support=180, min_seqs=5, min_length=2, max_seqs=25): # todo: increase maq_seqs for final versions
     """
     Calculate i-ratio of frequent sequences for vehicle in maint_dict.
     :param maint_seq_df: dictionary with vehicle : maintenance sequences as entries.
-    :param identifier: vehicle name or other identifier.
+    :param uids: unique vehicle ids to evaluate
+    :param systems: systems to evaluate
+    :param identifier: vehicle name or other identifier for this specific testing iteration.
     :param method: technique to use for statistical inference; either "frequentist" or "bayesian".
     :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
-    :param min_seqs: minimum number of sequences to return for a given vehicle.
+    :param min_seqs: minimum number of sequences to return for a given evaluation.
     :param min_length: minimum length of frequent sequences to consider.
+    :max_seqs: maximum number of sequences to evaluate; this is required to limit amount of statistical testing which can be computationally expensive.
     :return: 
     """
     output_data = []
@@ -117,14 +118,18 @@ def i_ratio(maint_seq_df, uids, identifier, method, min_support=180, min_seqs=5,
     left_data = maint_seq_df[maint_seq_df["unit"].isin(uids)]["maint_seq"]
     right_data = maint_seq_df[~maint_seq_df["unit"].isin(uids)]["maint_seq"]
     left_freq_seqs = []
-    while len(left_freq_seqs) < min_seqs:
+    all_systems_in_left_freq_seqs = False
+    while ((len(left_freq_seqs) < min_seqs) or (not all_systems_in_left_freq_seqs)) and len(left_freq_seqs) < max_seqs:
         print("Searching for frequent sequences for {} with min support {}".format(identifier, min_support))
-        left_freq_seqs = seqmining.freq_seq_enum(left_data, min_support)
-        left_freq_seqs = [x for x in left_freq_seqs if len(x[0]) >= min_length]
+        left_freq_seqs = seqmining.freq_seq_enum(left_data, min_support) # set of (sequence, frequency) tuples
+        left_freq_seqs = [x for x in left_freq_seqs if len(x[0]) >= min_length and not set(x[0]).isdisjoint(systems)]
         min_support -= 1
         if min_support == 0:
             print("[WARNING] Failed to find frequent sequences for {}".format(identifier))
             return None
+        # check if all systems have been identified in at least one subsequence
+        systems_in_left_freq_seqs = set([system for item in left_freq_seqs for system in item[0]])
+        all_systems_in_left_freq_seqs = set(systems).issubset(systems_in_left_freq_seqs)
     for left_seq in left_freq_seqs:
         seq = left_seq[0]
         left_seq_support = left_seq[1]
@@ -139,17 +144,16 @@ def i_ratio(maint_seq_df, uids, identifier, method, min_support=180, min_seqs=5,
             i_ratio = left_seq_norm_support / right_seq_norm_support
         except ZeroDivisionError:  # left_seq never occurs in right_data
             i_ratio = MAX_I_RATIO
-        # t test for difference between two population means for left_seq_norm_support and right_seq_norm_support
         counts = np.array([left_seq_support, right_seq_support])
         nobs = np.array([len(left_ngrams), len(right_ngrams)])
         if method == "frequentist":
             # for frequentist method, test_statistic_value is a z-score; p is its p-value
+            # t test for difference between two population means for left_seq_norm_support and right_seq_norm_support
             test_statistic_value, p = proportions_ztest(counts, nobs, value=0.05)
         elif method == "bayesian":
             # for bayesian method, test_statistic_value is the magnitude of the difference in posterior means theta_0 - theta_1;
             # p is the posterior probability that these means differ by more than ROPE
-            test_statistic_value, p = bayesian_prop_test(nobs, counts)
-
+            test_statistic_value, p = bayesian_prop_test(successes=counts, n=nobs)
         else:
             raise NotImplementedError("method must be either 'frequentist' or 'bayesian'.")
         seq_data = (identifier, seq, left_seq_support, round(left_seq_norm_support, 4), right_seq_support,
@@ -158,22 +162,23 @@ def i_ratio(maint_seq_df, uids, identifier, method, min_support=180, min_seqs=5,
     return output_data
 
 
-def create_i_ratio_df(maint_seq_df, uids, identifier, method):
+def create_i_ratio_df(maint_seq_df, uids, systems, identifier, method):
     """
 
-    :param maint_seq_df:
-    :param uids:
-    :param identifier:
+    :param maint_seq_df: dataframe containing uids and maintenance sequences for each vehicle.
+    :param uids: unique vehicle ids in the group to evaluate
+    :param systems: systems in the group to evaluate.
+    :param identifier: unique identifier to describe this iteration of i_ratio testing.
     :param method: either "frequentist" or "bayesian".
     :return:
     """
     assert method in ("frequentist", "bayesian")
-    i_ratio_results = i_ratio(maint_seq_df, uids, identifier, method=method)
+    i_ratio_results = i_ratio(maint_seq_df, uids, systems, identifier, method=method)
     if i_ratio_results:  # i_ratio() returns no results if frequent sequences cannot be found
         results_df = pd.DataFrame(i_ratio_results)
         results_df.columns = ['Identifier', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
                               'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
-        results_df.sort_values(by=['Left Support', 'P(z)', 'Identifier'], ascending=[False, True, True], inplace=True)
+        results_df.sort_values(by=['Identifier', 'P(z)', 'Left Support'], ascending=[False, True, True], inplace=True)
         return results_df
 
 
@@ -248,29 +253,37 @@ def compute_cluster_membership(A):
         # import ipdb;ipdb.set_trace()
         # ### END NEW
 
-        ###### experimental method w/threshold
-        QUANTILE_THRESH = 0.95
-        ingroup_thresh = np.quantile(loading_vector, QUANTILE_THRESH)
-        is_ingroup = loading_vector > ingroup_thresh
-        cluster_membership[:, r] = is_ingroup.flatten().astype(int)
-        ###### END experimental method w/threshold
+        # ###### experimental method w/threshold
+        # QUANTILE_THRESH = 0.95
+        # ingroup_thresh = np.quantile(loading_vector, QUANTILE_THRESH)
+        # is_ingroup = loading_vector > ingroup_thresh
+        # cluster_membership[:, r] = is_ingroup.flatten().astype(int)
+        # ###### END experimental method w/threshold
 
     return cluster_membership
 
 
 def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
-                              bgmm_matrix_fp="./tensor-data/month_year/bgmm_ingroup.txt"):
+                              vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
+                              B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
+                              system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt"):
     A = pd.read_csv(A_matrix_fp, header=None)
+    B = pd.read_csv(B_matrix_fp, header=None)
     vehicles_lookup_df = get_vehicles_lookup_df()
+    system_lookup_df = get_system_description_lookup_df()
     maint_seq_df = generate_vehicle_maintenance_seq_df()
     n, R = A.shape
-    cluster_membership_matrix = compute_cluster_membership(A)
-    print("[INFO] writing BGMM cluster membership matrix to {}".format(bgmm_matrix_fp))
-    np.savetxt(bgmm_matrix_fp, cluster_membership_matrix)
+    vehicle_ingroup_matrix = compute_cluster_membership(A)
+    system_ingroup_matrix = compute_cluster_membership(B)
+    print("[INFO] writing vehicle cluster membership matrix to {}".format(vehicle_ingroup_matrix_fp))
+    np.savetxt(vehicle_ingroup_matrix_fp, vehicle_ingroup_matrix)
+    print("[INFO] writing system cluster membership matrix to {}".format(system_ingroup_matrix_fp))
+    np.savetxt(system_ingroup_matrix_fp, system_ingroup_matrix)
     for r in range(R):
-        in_group_uids = vehicles_lookup_df.iloc[cluster_membership_matrix[:, r] == 1, :]["Unit#"].tolist()
+        in_group_uids = vehicles_lookup_df.iloc[vehicle_ingroup_matrix[:, r] == 1, :]["Unit#"].tolist()
+        in_group_systems = system_lookup_df.iloc[system_ingroup_matrix[:, r] == 1, :]["variable"].tolist()
         identifier = "PARAFAC_{}".format(r)
-        i_ratio_df = create_i_ratio_df(maint_seq_df, in_group_uids, identifier, method="bayesian")
+        i_ratio_df = create_i_ratio_df(maint_seq_df, in_group_uids, in_group_systems, identifier, method="bayesian")
         if i_ratio_df is not None:
             outpath = './freq-pattern-data/i_ratios_PARAFAC_r{}.csv'.format(r)
             i_ratio_df.to_csv(outpath, header=True, index=False)
