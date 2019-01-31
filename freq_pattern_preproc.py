@@ -30,6 +30,8 @@ def get_vehicle_maintenance_lookup_df(vehicles_fp=VEHICLES_FP, maintenance_fp=MA
     m = get_maintenance_lookup_df(maintenance_fp)
     vm_df = pd.merge(v, m, left_on='Unit#', right_on='Unit No')
     vm_df = create_time_feat(vm_df, type="date", col_name="WO_open_date")
+    vm_df = create_time_feat(vm_df, type="month_year", col_name="month_year")
+    vm_df["month_year"] = vm_df["month_year"] - vm_df["month_year"].min() # shift down to zero
     vm_df['Model'] = vm_df['Model'].apply(lambda x: re.sub('[/()`?]', '', x))
     vm_df["make_model"] = vm_df['Make'].map(lambda x: str(x) + "_") + vm_df['Model'].map(
         lambda x: str(x).strip().replace(' ', '_'))
