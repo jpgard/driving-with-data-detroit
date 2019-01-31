@@ -49,7 +49,7 @@ library(ggplot2)
 library(gridExtra)
 library(ggrepel)
 library(ggpubr)
-A_THRESH = 0.2
+A_THRESH = 0.1
 B_THRESH = 0.2
 OUT_DEVICE = "png" # set to pdf if pdf is preferred
 subfolder = analysis_type
@@ -63,14 +63,29 @@ for(i in seq(ncol(A))) {
 
      a_plot = ggplot(A, aes(x = factor(row.names(A)), y = A[,i], fill = temp$Dept.Desc)) + 
          geom_bar(stat = "identity", aes(alpha=factor(cluster_membership_matrix[,i] == 0))) + 
-         theme(plot.title = element_text(hjust = 0.5, size = rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = rel(0.4)), legend.key.size = unit(0.15, units = "cm"),legend.position=c(0.98,0.15), legend.justification=c(1,0)) + 
+         theme(plot.title = element_text(hjust = 0.5, size = rel(2)), 
+               panel.border = element_rect(colour = "black", fill=NA, size=1), 
+               panel.background = element_blank(), axis.text.x = element_blank(), 
+               axis.ticks.x = element_blank(), axis.title.x = element_blank(), 
+               legend.text = element_text(size = rel(0.4)), 
+               legend.key.size = unit(0.15, units = "cm"), 
+               legend.position=c(0.98,0.15), legend.justification=c(1,0)) + 
+         # geom_text_repel(aes(label=ifelse(A[,i] > A_THRESH, gsub("\\.+", ' ', temp$Dept.Desc), '')), nudge_y = 0.05) +
          ylim(0,1) + 
          ggtitle("Vehicle") + 
          labs(fill = "Department") + 
-         guides(alpha = FALSE) +
+         guides(alpha = FALSE, fill=FALSE) +
          ylab("Factor Weight") +
          scale_alpha_discrete(range=c(1, 0.4))
-     b_plot = ggplot(B, aes(x = factor(row.names(B)), y = B[,i])) + geom_bar(stat = "identity") + geom_text_repel(aes(label=ifelse(B[,i] > B_THRESH, gsub("\\.+", ' ', row.names(B)), '')), nudge_y = 0.05) + theme(plot.title = element_text(hjust = 0.5, size =rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) + ylim(0,1) + ggtitle("System Description") + ylab("Factor Weight")
+     b_plot = ggplot(B, aes(x = factor(row.names(B)), y = B[,i])) + geom_bar(stat = "identity") + 
+         geom_text_repel(aes(label=ifelse(B[,i] > B_THRESH, gsub("\\.+", ' ', row.names(B)), '')), nudge_y = 0.05) + 
+         theme(plot.title = element_text(hjust = 0.5, size =rel(2)), 
+               panel.border = element_rect(colour = "black", fill=NA, size=1), 
+               panel.background = element_blank(), axis.text.x = element_blank(), 
+               axis.ticks.x = element_blank(), axis.title.x = element_blank()) + 
+         ylim(0,1) + 
+         ggtitle("System Description") + 
+         ylab("Factor Weight")
      if (analysis_type == 'month_year_log'){
          c_plot = ggplot(C, aes(x = factor(row.names(C)), y = C[,i])) + geom_bar(stat = "identity") + 
              theme(plot.title = element_text(hjust = 0.5, size = rel(2)),
