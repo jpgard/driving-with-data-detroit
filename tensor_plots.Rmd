@@ -42,6 +42,8 @@ if (analysis_type == 'month_year_log'){
 
 ```
 
+
+
 ```{r}
 library(ggplot2)
 library(gridExtra)
@@ -85,7 +87,7 @@ for(i in seq(ncol(A))) {
      if (analysis_type == 'vehicle_year_log'){
          c_plot = ggplot(C, aes(x = factor(row.names(C)), y = C[,i])) + geom_bar(stat = "identity") + theme(plot.title = element_text(hjust = 0.5, size = rel(2)),panel.border = element_rect(colour = "black", fill=NA, size=1),panel.background = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank(), axis.text.x = element_text(angle=90, hjust=1, vjust=1)) + ylim(0,1) + ggtitle("Vehicle Lifetime Year") + ylab("Factor Weight") + scale_x_discrete(labels = year_axis_labs)
      }
-     g = arrangeGrob(a_plot, b_plot, c_plot, nrow = 3, ncol = 1) 
+     # g = arrangeGrob(a_plot, b_plot, c_plot, nrow = 3, ncol = 1) 
      g = ggarrange(a_plot, b_plot, c_plot, nrow=3, common.legend = TRUE, legend = "bottom")
      outfile = paste0('img/3_way_plots/', subfolder, '/3_way_plot_factor_update_', i, '.', OUT_DEVICE)
      ggsave(outfile, g, width = 10.9, height = 6.6, units = "in", device = OUT_DEVICE)

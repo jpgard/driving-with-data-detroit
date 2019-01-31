@@ -64,8 +64,7 @@ def generate_freq_seqs(data, make_mod, min_support=30):
     # calculate frequent sequences
     freq_seqs = seqmining.freq_seq_enum(data, min_support)
     if make_mod == "TERRASTAR_HORTON":
-        import ipdb;
-        ipdb.set_trace()
+        raise ValueError # this make/model has a data corruption issue; inspect data to see
     if min_support <= 5:
         print("No frequent patterns for {}.".format(make_mod))
         return None
@@ -201,6 +200,7 @@ def compute_cluster_membership(A):
     n, R = A.shape
     cluster_membership = np.full((n, R), np.nan)
     for r in range(R):
+        ### BEGIN previous model
         bgmm = BayesianGaussianMixture(n_components=2)
         loading_vector = np.reshape(A.iloc[:, r].values, (-1, 1))
         labels = bgmm.fit_predict(loading_vector)
@@ -208,6 +208,53 @@ def compute_cluster_membership(A):
         is_ingroup = labels == in_group_label
         # set the "in group" label to the group with higher posterior mean value
         cluster_membership[:, r] = is_ingroup.astype(int)
+        ### END previous model
+
+        # ### BEGIN NEW
+        # # setup model
+        # model = pm.Model()
+        # with model:
+        #     # cluster and sample sizes
+        #     k = 2
+        #     ndata = n
+        #     data=np.reshape(A.iloc[:, r].values, (-1, 1))
+        #     p = pm.Dirichlet('p', a=np.array([1., 1.]), shape=k)
+        #     # ensure all clusters have some points
+        #     p_min_potential = pm.Potential('p_min_potential', tt.switch(tt.min(p) < .005, -np.inf, 0))
+        #     # cluster centers
+        #     means = pm.Normal('means', mu=[0, 0], sd=2, shape=k)
+        #     # break symmetry
+        #     order_means_potential = pm.Potential('order_means_potential',
+        #                                          tt.switch(means[1] - means[0] < 0, -np.inf, 0))
+        #
+        #     # measurement error
+        #     sd = pm.Uniform('sd', lower=0, upper=10)
+        #
+        #     # latent cluster of each observation
+        #     category = pm.Categorical('category',
+        #                               p=p,
+        #                               shape=ndata)
+        #
+        #     # likelihood for each observed value
+        #     points = pm.Normal('obs',
+        #                        mu=means[category],
+        #                        sd=sd,
+        #                        observed=data)
+        # # fit model
+        # with model:
+        #     step1 = pm.Metropolis(vars=[p, sd, means])
+        #     step2 = pm.ElemwiseCategorical(vars=[category], values=[0, 1])
+        #     tr = pm.sample(2500, step=[step1, step2], cores=1)
+        # import ipdb;ipdb.set_trace()
+        # ### END NEW
+
+        ###### experimental method w/threshold
+        QUANTILE_THRESH = 0.95
+        ingroup_thresh = np.quantile(loading_vector, QUANTILE_THRESH)
+        is_ingroup = loading_vector > ingroup_thresh
+        cluster_membership[:, r] = is_ingroup.flatten().astype(int)
+        ###### END experimental method w/threshold
+
     return cluster_membership
 
 
@@ -280,6 +327,6 @@ def compute_sequence_tfidf(A_matrix_fp="./tensor-data/month_year/A_monthyear_log
 
 
 if __name__ == "__main__":
-    # bayesian_dsm_from_parafac()
+    bayesian_dsm_from_parafac()
     # frequentist_dsm_by_makemodel()
-    compute_sequence_tfidf()
+    # compute_sequence_tfidf()
