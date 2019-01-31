@@ -35,7 +35,7 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
         theta = pm.Beta("theta", alpha=1, beta=1,
                         shape=len(n))  # see https://docs.pymc.io/notebooks/GLM-hierarchical-binominal-model.html
         p = pm.Binomial("successes", p=theta, observed=successes, n=n)
-        trace = pm.sample(3000, tune=1000, # note: these converge relatively quickly; not much sampling needed
+        trace = pm.sample(2000, tune=1000, # note: these converge relatively quickly; not much sampling needed
                           cores=1)  # note: must set cores=1 because using Python2.7; see https://github.com/pymc-devs/pymc3/issues/3255
     if plot:
         pm.plots.plot_posterior(trace)
@@ -47,6 +47,7 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
     diff_in_posterior_means = abs(posterior_mean[1] - posterior_mean[0])
     trace_theta_diff_in_rope = np.apply_along_axis(lambda x: abs(x[0] - x[1]) <= rope, 1, theta_posterior_samps)
     p_rope = sum(trace_theta_diff_in_rope) / float(len(theta_posterior_samps))
+    import ipdb;ipdb.set_trace()
     return diff_in_posterior_means, p_rope
 
 
@@ -126,7 +127,7 @@ def i_ratio(left_seqs, right_seqs, systems, identifier, method, min_support=180,
         # check if all systems have been identified in at least one subsequence
         systems_in_left_freq_seqs = set([system for item in left_freq_seqs for system in item[0]])
         all_systems_in_left_freq_seqs = set(systems).issubset(systems_in_left_freq_seqs)
-    print("Identified {} frequent sequences for {} using min_support {}".format(len(left_freq_seqs), identifier, min_support))
+    print("Identified {} frequent sequences for {} using min_support {}; conducting testing".format(len(left_freq_seqs), identifier, min_support))
     for left_seq in left_freq_seqs:
         seq = left_seq[0]
         left_seq_support = left_seq[1]
@@ -177,20 +178,6 @@ def create_i_ratio_df(left_seqs, right_seqs, systems, identifier, method):
                               'Right Norm Support', 'i-Ratio', 'z', 'P(z)']
         results_df.sort_values(by=['Identifier', 'P(z)', 'Left Support'], ascending=[False, True, True], inplace=True)
         return results_df
-
-
-def frequentist_dsm_by_makemodel(vehicles=('HUSTLER_X-ONE', 'SMEAL_SST_PUMPER', 'DODGE_CHARGER', 'FORD_CROWN_VIC'),
-                                 outpath='./freq-pattern-data/frquentist_i_ratios_by_makemodel.csv'):
-    # note: issue calculating frequent sequences for FREIGHTLIN_M2112V; possibly due to too few makes and identical maintenance of all vehicles
-    maint_seq_df = generate_vehicle_maintenance_seq_df()
-    vehicles_lookup_df = get_vehicles_lookup_df()
-    i_ratio_df_list = list()
-    for v in vehicles:
-        uids = vehicles_lookup_df[vehicles_lookup_df["make_model"] == v]["Unit#"].tolist()
-        i_ratio_df_list.append(create_i_ratio_df(maint_seq_df, uids, v, method="frequentist"))
-    i_ratio_df = pd.concat(i_ratio_df_list)
-    i_ratio_df.to_csv(outpath, header=True, index=False)
-    print("Output written to {}".format(outpath))
 
 
 def compute_cluster_membership(A):
@@ -265,42 +252,7 @@ def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<E
     return out_seq
 
 
-def compute_sequence_tfidf(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
-                           bgmm_matrix_fp="./tensor-data/month_year/bgmm_ingroup.txt", max_ngram=5):
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    # a function to use sklearn preprocessor; http://www.davidsbatista.net/blog/2018/02/28/TfidfVectorizer/
-    def dummy_fun(doc):
-        return doc
-    # input data
-    A = pd.read_csv(A_matrix_fp, header=None)
-    n, R = A.shape
-    vehicles_lookup_df = get_vehicles_lookup_df()
-    maint_seq_df = generate_vehicle_maintenance_seq_df()
-    cluster_membership_matrix = np.loadtxt(bgmm_matrix_fp)
-    # compute tfidf for each r
-    for r in range(R):
-        in_group_uids = vehicles_lookup_df.iloc[cluster_membership_matrix[:, r] == 1, :]["Unit#"].tolist()
-        # concatenate INGROUP and OUTGROUP into a single sequence, adding a "START" and "END" token
-        in_group_seqs = maint_seq_df[maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
-        in_group_full_seq = concatenate_maintenance_sequences(in_group_seqs)
-        out_group_seqs = maint_seq_df[~maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
-        out_group_full_seq = concatenate_maintenance_sequences(out_group_seqs)
-        vectorizer = TfidfVectorizer(ngram_range=(1, max_ngram), norm="l2", token_pattern=None, tokenizer=dummy_fun, preprocessor=dummy_fun)
-        X = vectorizer.fit_transform([in_group_full_seq, out_group_full_seq])
-        tfidf = pd.DataFrame(data=X.T.toarray(), index=vectorizer.get_feature_names()).reset_index()
-        tfidf.columns = ["feature", "in_group", "out_group"]
-        tfidf["ratio"] = tfidf["in_group"]/tfidf["out_group"]
-        tfidf["diff"] = tfidf["in_group"]-tfidf["out_group"]
-        tfidf["abs_diff"] = abs(tfidf["diff"])
-        # tfidf[tfidf["ratio"] != float("inf")].sort_values("ratio", ascending=False)
-        # tfidf[tfidf["ratio"] != float("inf")].sort_values("diff", ascending=False)
-        outpath = './freq-pattern-data/tfidf_PARAFAC_r{}.csv'.format(r)
-        print("[INFO] writing tfidf matrix to {}".format(outpath))
-        tfidf.sort_values("abs_diff", ascending=False).to_csv(outpath, header=True, index=False)
-        return
-
 
 if __name__ == "__main__":
     bayesian_dsm_from_parafac()
-    # frequentist_dsm_by_makemodel()
-    # compute_sequence_tfidf()
+
