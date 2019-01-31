@@ -99,7 +99,7 @@ def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
     return None
 
 
-def i_ratio(left_seqs, right_seqs, systems, identifier, method, min_support=180, min_seqs=5, min_length=2, max_seqs=25): # todo: increase maq_seqs for final versions
+def i_ratio(left_seqs, right_seqs, systems, identifier, method, min_support=180, min_seqs=5, min_length=2, max_seqs=20): # todo: increase maq_seqs for final versions
     """
     Calculate i-ratio of frequent sequences for vehicle in maint_dict.
     :param maint_seq_df: dictionary with vehicle : maintenance sequences as entries.
@@ -199,39 +199,48 @@ def compute_cluster_membership(A):
     return cluster_membership
 
 
-def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
-                              vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
-                              B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
-                              system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt",
-                              C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
-                              monthyear_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt"):
+def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_fp, system_ingroup_matrix_fp,
+                              C_matrix_fp, time_ingroup_matrix_fp, time_colname, rgrid=None):
+    """
+    Conduct bayesian differential sequence mining using the results of PARAFAC.
+    :param A_matrix_fp: path to read A matrix fmor PARAFAC.
+    :param vehicle_ingroup_matrix_fp: path to write vehicle in-group matrices.
+    :param B_matrix_fp: path to read B matrix fmor PARAFAC.
+    :param system_ingroup_matrix_fp: path to write system in-group matrices.
+    :param C_matrix_fp: path to read C matrix fmor PARAFAC.
+    :param time_ingroup_matrix_fp: path to write time in-group matrices.
+    :param rgrid: grid of values to evaluate for r; by default all factors in range(R) will be evaluated.
+    :return:
+    """
     A = pd.read_csv(A_matrix_fp, header=None)
     B = pd.read_csv(B_matrix_fp, header=None)
     C = pd.read_csv(C_matrix_fp, header=None)
+    n,R = A.shape
+    if not rgrid:
+        rgrid = [x for x in range(R)]
     vehicles_lookup_df = get_vehicles_lookup_df()
     system_lookup_df = get_system_description_lookup_df()
-    n, R = A.shape
     vehicle_ingroup_matrix = compute_cluster_membership(A)
     system_ingroup_matrix = compute_cluster_membership(B)
-    monthyear_ingroup_matrix = compute_cluster_membership(C)
+    time_ingroup_matrix = compute_cluster_membership(C)
     maint_seq_df = generate_vehicle_maintenance_seq_df() # this is for all vehicles; TODO: do just for right_vehicles inside the r loop below
     print("[INFO] writing vehicle cluster membership matrix to {}".format(vehicle_ingroup_matrix_fp))
     np.savetxt(vehicle_ingroup_matrix_fp, vehicle_ingroup_matrix)
     print("[INFO] writing system cluster membership matrix to {}".format(system_ingroup_matrix_fp))
     np.savetxt(system_ingroup_matrix_fp, system_ingroup_matrix)
-    print("[INFO] writing time cluster membership matrix to {}".format(monthyear_ingroup_matrix_fp))
-    np.savetxt(monthyear_ingroup_matrix_fp, monthyear_ingroup_matrix)
-    for r in [9,16]:
+    print("[INFO] writing time cluster membership matrix to {}".format(time_ingroup_matrix_fp))
+    np.savetxt(time_ingroup_matrix_fp, time_ingroup_matrix)
+    for r in rgrid:
         in_group_uids = vehicles_lookup_df.iloc[vehicle_ingroup_matrix[:, r] == 1, :]["Unit#"].tolist()
         in_group_systems = system_lookup_df.iloc[system_ingroup_matrix[:, r] == 1, :]["variable"].tolist()
-        in_group_monthyear = np.argwhere(monthyear_ingroup_matrix[:, r] == 1).flatten().tolist()
-        left_maint_seq_df = generate_vehicle_maintenance_seq_df(write_to_file=False, filter_col="month_year", filter_values=in_group_monthyear)
+        in_group_times = np.argwhere(time_ingroup_matrix[:, r] == 1).flatten().tolist()
+        left_maint_seq_df = generate_vehicle_maintenance_seq_df(write_to_file=False, filter_col=time_colname, filter_values=in_group_times)
         left_seqs = left_maint_seq_df[left_maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
         right_seqs = maint_seq_df[~maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
         identifier = "PARAFAC_{}".format(r)
         i_ratio_df = create_i_ratio_df(left_seqs, right_seqs, in_group_systems, identifier, method="bayesian")
         if i_ratio_df is not None:
-            outpath = './freq-pattern-data/i_ratios_PARAFAC_r{}.csv'.format(r)
+            outpath = './freq-pattern-data/i_ratios_{}_PARAFAC_r{}.csv'.format(time_colname, r)
             i_ratio_df.to_csv(outpath, header=True, index=False)
     return
 
@@ -250,7 +259,23 @@ def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<E
     return out_seq
 
 
-
 if __name__ == "__main__":
-    bayesian_dsm_from_parafac()
+    # # with month-year analysis
+    bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
+                              vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
+                              B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
+                              system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
+                              C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
+                              time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
+                              time_colname="vehicle_year",
+                              rgrid=(2, 14, 15))
+    bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
+                              vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
+                              B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
+                              system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt",
+                              C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
+                              time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
+                              time_colname="month_year",
+                              rgrid=(0, 9, 16))
+
 
