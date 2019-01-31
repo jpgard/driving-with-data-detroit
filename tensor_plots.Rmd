@@ -78,7 +78,7 @@ for(i in seq(ncol(A))) {
          ylab("Factor Weight") +
          scale_alpha_discrete(range=c(1, 0.4))
      b_plot = ggplot(B, aes(x = factor(row.names(B)), y = B[,i])) + geom_bar(stat = "identity") + 
-         geom_text_repel(aes(label=ifelse(B[,i] > B_THRESH, gsub("\\.+", ' ', row.names(B)), '')), nudge_y = 0.05) + 
+         geom_text_repel(aes(label=ifelse(B[,i] > B_THRESH, gsub("\\.+", ' ', row.names(B)), '')), nudge_y = 0.05, size = 7) + 
          theme(plot.title = element_text(hjust = 0.5, size =rel(2)), 
                panel.border = element_rect(colour = "black", fill=NA, size=1), 
                panel.background = element_blank(), axis.text.x = element_blank(), 
