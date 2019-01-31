@@ -221,7 +221,7 @@ def bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_
     np.savetxt(system_ingroup_matrix_fp, system_ingroup_matrix)
     print("[INFO] writing time cluster membership matrix to {}".format(monthyear_ingroup_matrix_fp))
     np.savetxt(monthyear_ingroup_matrix_fp, monthyear_ingroup_matrix)
-    for r in range(R):
+    for r in [9,16]:
         in_group_uids = vehicles_lookup_df.iloc[vehicle_ingroup_matrix[:, r] == 1, :]["Unit#"].tolist()
         in_group_systems = system_lookup_df.iloc[system_ingroup_matrix[:, r] == 1, :]["variable"].tolist()
         in_group_monthyear = np.argwhere(monthyear_ingroup_matrix[:, r] == 1).flatten().tolist()
