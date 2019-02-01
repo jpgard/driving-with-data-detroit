@@ -1,9 +1,7 @@
 # usage: python freq_pattern_mine.py
 
-import json
 import os
 from pymining import seqmining
-import pandas as pd
 from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, get_vehicles_lookup_df, get_system_description_lookup_df
 from nltk import ngrams
 import pandas as pd
@@ -12,11 +10,12 @@ from statsmodels.stats.proportion import proportions_ztest
 import numpy as np
 from sklearn.mixture import BayesianGaussianMixture
 import matplotlib
-
+from collections import Counter
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pymc3 as pm
 import theano.tensor as tt
+import time
 
 # set value for i_ratio when sequence never occurs for other vehicles
 MAX_I_RATIO = 10000
@@ -35,7 +34,7 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
         theta = pm.Beta("theta", alpha=1, beta=1,
                         shape=len(n))  # see https://docs.pymc.io/notebooks/GLM-hierarchical-binominal-model.html
         p = pm.Binomial("successes", p=theta, observed=successes, n=n)
-        trace = pm.sample(2000, tune=1000, # note: these converge relatively quickly; not much sampling needed
+        trace = pm.sample(1000, tune=500, # note: these converge relatively quickly; not much sampling needed
                           cores=1)  # note: must set cores=1 because using Python2.7; see https://github.com/pymc-devs/pymc3/issues/3255
     if plot:
         pm.plots.plot_posterior(trace)
@@ -50,79 +49,46 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
     return diff_in_posterior_means, p_rope
 
 
-def generate_freq_seqs(data, make_mod, min_support=30):
-    """
-    Generate frequent sequences from a nested list of sequences.
-    :param data: List of list; each element should be a list containing an ordered sequence.
-    :param make_mod: make of make/model combination; used for output file naming.
-    :param min_support: minimum support of sequences to consider.
-    :return: pd.DataFrame of frequent sequences, support, and normalized support (support / total # jobs in data).
-    """
-    num_jobs = sum([len(x) for x in data])
-    # calculate frequent sequences
-    freq_seqs = seqmining.freq_seq_enum(data, min_support)
-    if make_mod == "TERRASTAR_HORTON":
-        raise ValueError # this make/model has a data corruption issue; inspect data to see
-    if min_support <= 5:
-        print("No frequent patterns for {}.".format(make_mod))
-        return None
-    if len(freq_seqs) == 0:
-        print("No frequent patterns for {} at support threshold {}".format(make_mod, min_support))
-        min_support -= 5
-        print("Trying {}...".format(min_support))
-        generate_freq_seqs(data, make_mod, min_support)
-    else:
-        freq_seq_df = pd.DataFrame.from_records(list(freq_seqs))
-        freq_seq_df.columns = ['Sequence', 'Support']
-        freq_seq_df['Normalized_Support'] = freq_seq_df['Support'] / float(num_jobs)
-        freq_seq_df.sort_values('Support', ascending=False).to_csv(
-            './freq-pattern-data/freq-seqs/{}_freq_seqs.csv'.format(make_mod))
-    return freq_seq_df
-
-
-def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
-    """
-    Iterate through sequence files in directory.
-    :param dir: 
-    :return: 
-    """
-    seq_files = os.listdir(dir)
-    for sf in seq_files:
-        print("mining frequent sequences for {}".format(sf))
-        make_mod = sf.replace("_seqs.txt", "")
-        data = []
-        # read data into list
-        with open(os.path.join(dir, sf), 'r') as f:
-            for line in f.readlines():
-                data.append(json.loads(line))
-        generate_freq_seqs(data, make_mod)
-    return None
-
-
-def freq_seq_search(seqs, systems, min_support=180, min_seqs=5, min_length=2, max_seqs=10): # todo: increase maq_seqs for final versions
+def freq_seq_search(seqs, systems, search_min_support=180, search_max_seqs=100, search_min_seqs=5, search_min_length=2,
+                    add_all_system_ngrams=True, ngram_min_support=5, ngram_range=(2, 3)):
     """
     Search for frequent sequences in seqs using a frequent sequence mining algorithm.
     :param seqs:
     :param systems:
-    :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
-    :param min_seqs: minimum number of sequences to return for a given evaluation.
-    :param min_length: minimum length of frequent sequences to consider.
-    :max_seqs: maximum number of sequences to return
+    :param search_min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found (best to start with very large value; overestimating induces negligible additional computation).
+    :param search_min_seqs: minimum number of sequences to return for a given evaluation.
+    :param ngram_range: minimum,maximum length of frequent sequences to consider.
+    :ngram_min_support: minimum support for ngrams from system-level search
+    :search_max_seqs: maximum number of sequences to return from pattern mining search
     :return:
     """
-    freq_seqs = []
+    print("[INFO] generating frequent sequences")
+    start_time = time.time()
+    freq_seqs = list()
     all_systems_in_freq_seqs = False  # indicator for whether at least one frequent subsequence has been found with every system in systems
-    while ((len(freq_seqs) < min_seqs) or (not all_systems_in_freq_seqs)) and len(freq_seqs) < max_seqs:
-        freq_seqs = seqmining.freq_seq_enum(seqs, min_support)  # set of (sequence, frequency) tuples
-        freq_seqs = [x for x in freq_seqs if len(x[0]) >= min_length and not set(x[0]).isdisjoint(systems)]
-        min_support -= 1
-        if min_support == 0:
+    while ((len(freq_seqs) < search_min_seqs) or (not all_systems_in_freq_seqs)) and len(freq_seqs) < search_max_seqs:
+        freq_seqs = seqmining.freq_seq_enum(seqs, search_min_support)  # set of (sequence, frequency) tuples
+        freq_seqs = [x for x in freq_seqs if len(x[0]) >= search_min_length and not set(x[0]).isdisjoint(systems)]
+        search_min_support -= 1
+        if search_min_support == 0:
             print("[WARNING] Failed to find frequent sequences for {}".format(identifier))
             return None
         # check if all systems have been identified in at least one subsequence
         systems_in_freq_seqs = set([system for item in freq_seqs for system in item[0]])
         all_systems_in_freq_seqs = set(systems).issubset(systems_in_freq_seqs)
-    # todo: if not all systems, explicitly find common subsequences containing those systems
+    if add_all_system_ngrams:
+        # if not all systems, explicitly find common subsequences containing those systems
+        for ngram_length in range(ngram_range[0], ngram_range[1]+1):
+            print("[INFO] getting all system ngrams of length {} with min_support {}".format(ngram_length, ngram_min_support))
+            ngram_obs = [ngrams(s, ngram_length) for s in seqs.tolist()]
+            # "unroll" the ngram iterators, keeping only sequences which contain one of systems
+            system_ngram_counts = Counter([b for vehicle_bigrams in ngram_obs for b in vehicle_bigrams if not set(b).isdisjoint(systems)])
+            for system in systems:
+                system_ngrams = sorted([x for x in system_ngram_counts.items() if system in x[0] and x[1] >= ngram_min_support],
+                                       key = lambda x: x[1], reverse=True)
+                freq_seqs += system_ngrams
+    end_time = time.time()
+    print("[INFO] found frequent sequences in {} sec".format(round(end_time-start_time)))
     return freq_seqs
 
 
@@ -201,7 +167,6 @@ def compute_cluster_membership(A):
     n, R = A.shape
     cluster_membership = np.full((n, R), np.nan)
     for r in range(R):
-        ### BEGIN previous model
         bgmm = BayesianGaussianMixture(n_components=2)
         loading_vector = np.reshape(A.iloc[:, r].values, (-1, 1))
         labels = bgmm.fit_predict(loading_vector)
@@ -236,7 +201,7 @@ def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_f
     vehicle_ingroup_matrix = compute_cluster_membership(A)
     system_ingroup_matrix = compute_cluster_membership(B)
     time_ingroup_matrix = compute_cluster_membership(C)
-    maint_seq_df = generate_vehicle_maintenance_seq_df() # this is for all vehicles; TODO: do just for right_vehicles inside the r loop below
+    maint_seq_df = generate_vehicle_maintenance_seq_df()
     print("[INFO] writing vehicle cluster membership matrix to {}".format(vehicle_ingroup_matrix_fp))
     np.savetxt(vehicle_ingroup_matrix_fp, vehicle_ingroup_matrix)
     print("[INFO] writing system cluster membership matrix to {}".format(system_ingroup_matrix_fp))
@@ -290,7 +255,7 @@ if __name__ == "__main__":
                               time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
                               time_colname="month_year",
                               # rgrid=(0, 9, 16)
-                              rgrid=[16]
+                              rgrid=[0]
                               )
 
 
