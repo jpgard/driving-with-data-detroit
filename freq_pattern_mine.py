@@ -99,34 +99,47 @@ def output_freq_seq_files(dir='./freq-pattern-data/seqs/'):
     return None
 
 
-def i_ratio(left_seqs, right_seqs, systems, identifier, method, min_support=180, min_seqs=5, min_length=2, max_seqs=20): # todo: increase maq_seqs for final versions
+def freq_seq_search(seqs, systems, min_support=180, min_seqs=5, min_length=2, max_seqs=10): # todo: increase maq_seqs for final versions
+    """
+    Search for frequent sequences in seqs using a frequent sequence mining algorithm.
+    :param seqs:
+    :param systems:
+    :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
+    :param min_seqs: minimum number of sequences to return for a given evaluation.
+    :param min_length: minimum length of frequent sequences to consider.
+    :max_seqs: maximum number of sequences to return
+    :return:
+    """
+    freq_seqs = []
+    all_systems_in_freq_seqs = False  # indicator for whether at least one frequent subsequence has been found with every system in systems
+    while ((len(freq_seqs) < min_seqs) or (not all_systems_in_freq_seqs)) and len(freq_seqs) < max_seqs:
+        freq_seqs = seqmining.freq_seq_enum(seqs, min_support)  # set of (sequence, frequency) tuples
+        freq_seqs = [x for x in freq_seqs if len(x[0]) >= min_length and not set(x[0]).isdisjoint(systems)]
+        min_support -= 1
+        if min_support == 0:
+            print("[WARNING] Failed to find frequent sequences for {}".format(identifier))
+            return None
+        # check if all systems have been identified in at least one subsequence
+        systems_in_freq_seqs = set([system for item in freq_seqs for system in item[0]])
+        all_systems_in_freq_seqs = set(systems).issubset(systems_in_freq_seqs)
+    # todo: if not all systems, explicitly find common subsequences containing those systems
+    return freq_seqs
+
+
+
+def i_ratio(left_seqs, right_seqs, systems, identifier, stat_test_method):
     """
     Calculate i-ratio of frequent sequences for vehicle in maint_dict.
     :param maint_seq_df: dictionary with vehicle : maintenance sequences as entries.
     :param uids: unique vehicle ids to evaluate
     :param systems: systems to evaluate
     :param identifier: vehicle name or other identifier for this specific testing iteration.
-    :param method: technique to use for statistical inference; either "frequentist" or "bayesian".
-    :param min_support: minimum support to consider; will be iteratively lowered if insufficient sequences are found.
-    :param min_seqs: minimum number of sequences to return for a given evaluation.
-    :param min_length: minimum length of frequent sequences to consider.
-    :max_seqs: maximum number of sequences to evaluate; this is required to limit amount of statistical testing which can be computationally expensive.
-    :return: 
+    :param stat_test_method: technique to use for statistical inference; either "frequentist" or "bayesian".
+    :return:
     """
     output_data = []
-    left_freq_seqs = []
-    all_systems_in_left_freq_seqs = False # indicator for whether at least one frequent subsequence has been found with every system in systems
-    while ((len(left_freq_seqs) < min_seqs) or (not all_systems_in_left_freq_seqs)) and len(left_freq_seqs) < max_seqs:
-        left_freq_seqs = seqmining.freq_seq_enum(left_seqs, min_support) # set of (sequence, frequency) tuples
-        left_freq_seqs = [x for x in left_freq_seqs if len(x[0]) >= min_length and not set(x[0]).isdisjoint(systems)]
-        min_support -= 1
-        if min_support == 0:
-            print("[WARNING] Failed to find frequent sequences for {}".format(identifier))
-            return None
-        # check if all systems have been identified in at least one subsequence
-        systems_in_left_freq_seqs = set([system for item in left_freq_seqs for system in item[0]])
-        all_systems_in_left_freq_seqs = set(systems).issubset(systems_in_left_freq_seqs)
-    print("Identified {} frequent sequences for {} using min_support {}; conducting testing".format(len(left_freq_seqs), identifier, min_support))
+    left_freq_seqs = freq_seq_search(left_seqs, systems)
+    print("[INFO] Identified {} frequent sequences for {}; conducting testing".format(len(left_freq_seqs), identifier))
     for left_seq in left_freq_seqs:
         seq = left_seq[0]
         left_seq_support = left_seq[1]
@@ -143,16 +156,16 @@ def i_ratio(left_seqs, right_seqs, systems, identifier, method, min_support=180,
             i_ratio = MAX_I_RATIO
         counts = np.array([left_seq_support, right_seq_support])
         nobs = np.array([len(left_ngrams), len(right_ngrams)])
-        if method == "frequentist":
-            # for frequentist method, test_statistic_value is a z-score; p is its p-value
+        if stat_test_method == "frequentist":
+            # for frequentist stat_test_method, test_statistic_value is a z-score; p is its p-value
             # t test for difference between two population means for left_seq_norm_support and right_seq_norm_support
             test_statistic_value, p = proportions_ztest(counts, nobs, value=0.05)
-        elif method == "bayesian":
-            # for bayesian method, test_statistic_value is the magnitude of the difference in posterior means theta_0 - theta_1;
+        elif stat_test_method == "bayesian":
+            # for bayesian stat_test_method, test_statistic_value is the magnitude of the difference in posterior means theta_0 - theta_1;
             # p is the posterior probability that these means differ by more than ROPE
             test_statistic_value, p = bayesian_prop_test(successes=counts, n=nobs)
         else:
-            raise NotImplementedError("method must be either 'frequentist' or 'bayesian'.")
+            raise NotImplementedError("stat_test_method must be either 'frequentist' or 'bayesian'.")
         seq_data = (identifier, seq, left_seq_support, round(left_seq_norm_support, 4), right_seq_support,
                     round(right_seq_norm_support, 4), round(i_ratio, 2), round(test_statistic_value, 1), round(p, 4))
         output_data.append(seq_data)
@@ -170,7 +183,7 @@ def create_i_ratio_df(left_seqs, right_seqs, systems, identifier, method):
     :return:
     """
     assert method in ("frequentist", "bayesian")
-    i_ratio_results = i_ratio(left_seqs, right_seqs, systems, identifier, method=method)
+    i_ratio_results = i_ratio(left_seqs, right_seqs, systems, identifier, stat_test_method=method)
     if i_ratio_results:  # i_ratio() returns no results if frequent sequences cannot be found
         results_df = pd.DataFrame(i_ratio_results)
         results_df.columns = ['Identifier', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
@@ -261,14 +274,14 @@ def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<E
 
 if __name__ == "__main__":
     # # with month-year analysis
-    bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
-                              vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
-                              B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
-                              system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
-                              C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
-                              time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
-                              time_colname="vehicle_year",
-                              rgrid=(2, 14, 15))
+    # bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
+    #                           vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
+    #                           B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
+    #                           system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
+    #                           C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
+    #                           time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
+    #                           time_colname="vehicle_year",
+    #                           rgrid=(2, 14, 15))
     bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
                               vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
                               B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
@@ -276,6 +289,8 @@ if __name__ == "__main__":
                               C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
                               time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
                               time_colname="month_year",
-                              rgrid=(0, 9, 16))
+                              # rgrid=(0, 9, 16)
+                              rgrid=[16]
+                              )
 
 
