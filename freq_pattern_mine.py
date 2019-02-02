@@ -2,7 +2,8 @@
 
 import os
 from pymining import seqmining
-from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, get_vehicles_lookup_df, get_system_description_lookup_df
+from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, get_vehicles_lookup_df, \
+    get_system_description_lookup_df
 from nltk import ngrams
 import pandas as pd
 import math
@@ -11,6 +12,7 @@ import numpy as np
 from sklearn.mixture import BayesianGaussianMixture
 import matplotlib
 from collections import Counter
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import pymc3 as pm
@@ -34,7 +36,7 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
         theta = pm.Beta("theta", alpha=1, beta=1,
                         shape=len(n))  # see https://docs.pymc.io/notebooks/GLM-hierarchical-binominal-model.html
         p = pm.Binomial("successes", p=theta, observed=successes, n=n)
-        trace = pm.sample(1000, tune=500, # note: these converge relatively quickly; not much sampling needed
+        trace = pm.sample(2000, tune=100,  # note: these converge relatively quickly; not much sampling needed
                           cores=1)  # note: must set cores=1 because using Python2.7; see https://github.com/pymc-devs/pymc3/issues/3255
     if plot:
         pm.plots.plot_posterior(trace)
@@ -49,8 +51,8 @@ def bayesian_prop_test(successes, n, rope=0.01, plot=False):
     return diff_in_posterior_means, p_rope
 
 
-def freq_seq_search(seqs, systems, search_min_support=180, search_max_seqs=100, search_min_seqs=5, search_min_length=2,
-                    add_all_system_ngrams=True, ngram_min_support=5, ngram_range=(2, 3)):
+def freq_seq_search(seqs, systems, search_min_support=180, search_max_seqs=500, search_min_seqs=5, search_min_length=2,
+                    add_all_system_ngrams=False, ngram_min_support=5, ngram_range=(2, 3)):
     """
     Search for frequent sequences in seqs using a frequent sequence mining algorithm.
     :param seqs:
@@ -66,7 +68,7 @@ def freq_seq_search(seqs, systems, search_min_support=180, search_max_seqs=100, 
     start_time = time.time()
     freq_seqs = list()
     all_systems_in_freq_seqs = False  # indicator for whether at least one frequent subsequence has been found with every system in systems
-    while ((len(freq_seqs) < search_min_seqs) or (not all_systems_in_freq_seqs)) and len(freq_seqs) < search_max_seqs:
+    while len(freq_seqs) < search_max_seqs:
         freq_seqs = seqmining.freq_seq_enum(seqs, search_min_support)  # set of (sequence, frequency) tuples
         freq_seqs = [x for x in freq_seqs if len(x[0]) >= search_min_length and not set(x[0]).isdisjoint(systems)]
         search_min_support -= 1
@@ -78,19 +80,21 @@ def freq_seq_search(seqs, systems, search_min_support=180, search_max_seqs=100, 
         all_systems_in_freq_seqs = set(systems).issubset(systems_in_freq_seqs)
     if add_all_system_ngrams:
         # if not all systems, explicitly find common subsequences containing those systems
-        for ngram_length in range(ngram_range[0], ngram_range[1]+1):
-            print("[INFO] getting all system ngrams of length {} with min_support {}".format(ngram_length, ngram_min_support))
+        for ngram_length in range(ngram_range[0], ngram_range[1] + 1):
+            print(
+            "[INFO] getting all system ngrams of length {} with min_support {}".format(ngram_length, ngram_min_support))
             ngram_obs = [ngrams(s, ngram_length) for s in seqs.tolist()]
             # "unroll" the ngram iterators, keeping only sequences which contain one of systems
-            system_ngram_counts = Counter([b for vehicle_bigrams in ngram_obs for b in vehicle_bigrams if not set(b).isdisjoint(systems)])
+            system_ngram_counts = Counter(
+                [b for vehicle_bigrams in ngram_obs for b in vehicle_bigrams if not set(b).isdisjoint(systems)])
             for system in systems:
-                system_ngrams = sorted([x for x in system_ngram_counts.items() if system in x[0] and x[1] >= ngram_min_support],
-                                       key = lambda x: x[1], reverse=True)
+                system_ngrams = sorted(
+                    [x for x in system_ngram_counts.items() if system in x[0] and x[1] >= ngram_min_support],
+                    key=lambda x: x[1], reverse=True)
                 freq_seqs += system_ngrams
     end_time = time.time()
-    print("[INFO] found frequent sequences in {} sec".format(round(end_time-start_time)))
+    print("[INFO] found frequent sequences in {} sec".format(round(end_time - start_time)))
     return freq_seqs
-
 
 
 def i_ratio(left_seqs, right_seqs, systems, identifier, stat_test_method):
@@ -138,18 +142,18 @@ def i_ratio(left_seqs, right_seqs, systems, identifier, stat_test_method):
     return output_data
 
 
-def create_i_ratio_df(left_seqs, right_seqs, systems, identifier, method):
+def create_i_ratio_df(left_seqs, right_seqs, systems, identifier, stat_test_method):
     """
 
     :param left_seqs:
     :param right_seqs:
     :param systems: systems in the group to evaluate.
     :param identifier: unique identifier to describe this iteration of i_ratio testing.
-    :param method: either "frequentist" or "bayesian".
+    :param stat_test_method: either "frequentist" or "bayesian".
     :return:
     """
-    assert method in ("frequentist", "bayesian")
-    i_ratio_results = i_ratio(left_seqs, right_seqs, systems, identifier, stat_test_method=method)
+    assert stat_test_method in ("frequentist", "bayesian")
+    i_ratio_results = i_ratio(left_seqs, right_seqs, systems, identifier, stat_test_method=stat_test_method)
     if i_ratio_results:  # i_ratio() returns no results if frequent sequences cannot be found
         results_df = pd.DataFrame(i_ratio_results)
         results_df.columns = ['Identifier', 'Sequence', 'Left Support', 'Left Norm Support', 'Right Support',
@@ -193,7 +197,7 @@ def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_f
     A = pd.read_csv(A_matrix_fp, header=None)
     B = pd.read_csv(B_matrix_fp, header=None)
     C = pd.read_csv(C_matrix_fp, header=None)
-    n,R = A.shape
+    n, R = A.shape
     if not rgrid:
         rgrid = [x for x in range(R)]
     vehicles_lookup_df = get_vehicles_lookup_df()
@@ -212,11 +216,12 @@ def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_f
         in_group_uids = vehicles_lookup_df.iloc[vehicle_ingroup_matrix[:, r] == 1, :]["Unit#"].tolist()
         in_group_systems = system_lookup_df.iloc[system_ingroup_matrix[:, r] == 1, :]["variable"].tolist()
         in_group_times = np.argwhere(time_ingroup_matrix[:, r] == 1).flatten().tolist()
-        left_maint_seq_df = generate_vehicle_maintenance_seq_df(write_to_file=False, filter_col=time_colname, filter_values=in_group_times)
+        left_maint_seq_df = generate_vehicle_maintenance_seq_df(write_to_file=False, filter_col=time_colname,
+                                                                filter_values=in_group_times)
         left_seqs = left_maint_seq_df[left_maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
         right_seqs = maint_seq_df[~maint_seq_df["unit"].isin(in_group_uids)]["maint_seq"]
         identifier = "PARAFAC_{}".format(r)
-        i_ratio_df = create_i_ratio_df(left_seqs, right_seqs, in_group_systems, identifier, method="bayesian")
+        i_ratio_df = create_i_ratio_df(left_seqs, right_seqs, in_group_systems, identifier, stat_test_method="bayesian")
         if i_ratio_df is not None:
             outpath = './freq-pattern-data/i_ratios_{}_PARAFAC_r{}.csv'.format(time_colname, r)
             i_ratio_df.to_csv(outpath, header=True, index=False)
@@ -239,14 +244,14 @@ def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<E
 
 if __name__ == "__main__":
     # # with month-year analysis
-    # bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
-    #                           vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
-    #                           B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
-    #                           system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
-    #                           C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
-    #                           time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
-    #                           time_colname="vehicle_year",
-    #                           rgrid=(2, 14, 15))
+    bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
+                              vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
+                              B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
+                              system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
+                              C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
+                              time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
+                              time_colname="vehicle_year",
+                              rgrid=(2, 14, 15))
     bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
                               vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
                               B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
@@ -254,8 +259,5 @@ if __name__ == "__main__":
                               C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
                               time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
                               time_colname="month_year",
-                              # rgrid=(0, 9, 16)
-                              rgrid=[0]
+                              rgrid=(0, 9, 16)
                               )
-
-
