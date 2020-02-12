@@ -2,10 +2,10 @@
 Preprocessing script to create MATLAB-ready tensors summarizing detroit vehicles data.
 
 Usage:
-$ python tensor_preproc.py -td month_year -n log
-$ python tensor_preproc.py -td year -n log
-$ python tensor_preproc.py -td vehicle_year -n log
-$ python tensor_preproc.py -td vehicle_year -n log --max_year 2011
+$ python2 tensor_preproc.py -td month_year -n log
+$ python2 tensor_preproc.py -td year -n log
+$ python2 tensor_preproc.py -td vehicle_year -n log
+$ python2 tensor_preproc.py -td vehicle_year -n log --max_year 2011
 """
 
 import pandas as pd
