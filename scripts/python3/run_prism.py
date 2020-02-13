@@ -15,6 +15,7 @@ from collections import Counter
 matplotlib.use('TkAgg')
 import pymc3 as pm
 import time
+import argparse
 
 # set value for i_ratio when sequence never occurs for other vehicles
 MAX_I_RATIO = 10000
@@ -289,23 +290,30 @@ def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<E
 
 
 if __name__ == "__main__":
-    # # with month-year analysis
-    run_prism(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
-              vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
-              B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
-              system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
-              C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
-              time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
-              time_colname="vehicle_year",
-              vehicle_lkp_fp="./tensor-data/vehicle_year/Unit_vehicle_year_lkp.csv",
-              rgrid=(2, 14, 15))
-    run_prism(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
-              vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
-              B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
-              system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt",
-              C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
-              time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
-              time_colname="month_year",
-              vehicle_lkp_fp="./tensor-data/month_year/Unit_month_year_lkp.csv",
-              rgrid=(0, 9, 16)
-              )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-td", required=True,
+                        help="Time dimension (vehicle_year or month_year")
+    args = parser.parse_args()
+    if args.td == "vehicle_year":
+        run_prism(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
+                  vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
+                  B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
+                  system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
+                  C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
+                  time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
+                  time_colname="vehicle_year",
+                  vehicle_lkp_fp="./tensor-data/vehicle_year/Unit_vehicle_year_lkp.csv",
+                  rgrid=(2, 14, 15))
+    elif args.td == "month_year":
+        run_prism(A_matrix_fp="./tensor-data/month_year/A_month_year_log.txt",
+                  vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
+                  B_matrix_fp="./tensor-data/month_year/B_month_year_log.txt",
+                  system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt",
+                  C_matrix_fp="./tensor-data/month_year/C_month_year_log.txt",
+                  time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
+                  time_colname="month_year",
+                  vehicle_lkp_fp="./tensor-data/month_year/Unit_month_year_lkp.csv",
+                  rgrid=(0, 9, 16)
+                  )
+    else:
+        raise ValueError("specify a valid time dimension using the -td flag.")
