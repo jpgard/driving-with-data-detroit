@@ -12,7 +12,9 @@ https://arxiv.org/abs/1710.06839
 
 This README provides guidance on how to replicate the PARAFAC/PRISM analysis presented in our paper, along with the LSTM maintenance prediction model. The ARIMA models are currently provided in a separate repository.
 
-# To run PARAFAC and produce three-way plots on a user-provided dataset:
+# PARAFAC/PRISM
+
+This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM (PaRafac-Informed Sequence Mining), and visualize the results using three-way plots.
 
 1. Data preprocessing
 
@@ -66,7 +68,9 @@ This README provides guidance on how to replicate the PARAFAC/PRISM analysis pre
     ```
 
 
-# To extract data and build/evaluate LSTM:
+# Maintenance Prediction LSTM:
+
+This section describes the steps to train and evaluate the LSTM described in the paper for maintenance prediction. Note that the LSTM model is modified from the original code in the Tensorflow 1.x repository [here](https://github.com/tensorflow/docs/blob/master/site/en/r1/tutorials/sequences/recurrent.md). Note that TensorFlow 1.x is in *maintenance mode only* as of 2020.
 
 1. Create the files with maintenance sequences by make/model; each line represents a unique vehicle:
 ```$ python3 freq_pattern_preproc.py```
@@ -109,18 +113,3 @@ This README provides guidance on how to replicate the PARAFAC/PRISM analysis pre
     Epoch: 8 Valid Perplexity: 15.284
     ...
     ```
-
-# Key files in this repo
-
-## `tensor_preproc.py`
-
-Python script to preprocess vehicles data into a format suitable for PARAFAC tensor decomposition in MATLAB. Writes output .tsv or .dat file for downstream analysis.
-
-## `tensor_utils.py`
-
-Utility functions used in `tensor_preproc.py`. This script is not executed by itself.
-
-## `tensor_decomp.m`
-
-MATLAB script which loads tensor toolbox and preprocessed data output from `tensor_preproc.py`, performs PARAFAC decomposition and plots the results over the time dimension. (Note: this script could be called from the command line or using the Python `subprocess` module at the end of tensor_preproc.py; we instead executed it manually using the Matlab GUI in order to ensure execution completed.)
-
