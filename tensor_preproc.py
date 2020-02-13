@@ -3,8 +3,8 @@ Preprocessing script to create MATLAB-ready tensors summarizing detroit vehicles
 
 Usage:
 $ python2 tensor_preproc.py -td month_year -n log
-$ python2 tensor_preproc.py -td year -n log
 $ python2 tensor_preproc.py -td vehicle_year -n log
+$ python2 tensor_preproc.py -td year -n log
 $ python2 tensor_preproc.py -td vehicle_year -n log --max_year 2011
 """
 
@@ -40,7 +40,7 @@ def main(normalization=None, max_year=2017):
                       sep='\t', header=False, index=False)
         else:
             print("Must specify a valid normalization")
-            raise
+            raise NotImplementedError
     else:  # no normalization specified
         pt.to_csv('./tensor-data/{0}/pre_tensor_{0}_{1}.dat'.format(args.td, max_year),
                   sep='\t', header=False, index=False)
@@ -49,7 +49,7 @@ def main(normalization=None, max_year=2017):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Create summary matrix from Detroit Vehicles data for analysis '
+        description='Create summary matrix from Detroit Vehicles data for analysis in'
                     'MATLAB.')
     parser.add_argument('-td',
                         metavar="Time dimension (year, month_year, or vehicle_year)",
