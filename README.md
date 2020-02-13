@@ -66,7 +66,9 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     ```
     $ Rscript tensor_plots.Rmd
     ```
-
+    This will produce a series of plots in `img` similar to those shown below.
+    
+    ![3way-example](img/readme/3way_monthyear_example.png)
 
 # Maintenance Prediction LSTM:
 
