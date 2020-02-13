@@ -57,14 +57,14 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     ```
 
 
-4. Generate the 3-way plots in R using `tensor_plots.Rmd`. 
+4. Generate the 3-way plots in R using `scripts/R/tensor_plots.Rmd`. 
 
-    a. Edit the file `tensor_plots.Rmd` to point to the correct factor loading matrices (by default these should be correct) and set the `analysis_type` variable to either `vehicle_year_log` or `month_year_log` as desired.
+    a. Edit the file `scripts/R/tensor_plots.Rmd` to point to the correct factor loading matrices (by default these should be correct) and set the `analysis_type` variable to either `vehicle_year_log` or `month_year_log` as desired.
     
-    b. Run `tensor_plots.Rmd`. This script can be run in an IDE (e.g. RStudio), or from the command line via
+    b. Run `scripts/R/tensor_plots.Rmd`. This script can be run in an IDE (e.g. RStudio), or from the command line via
     
     ```
-    $ Rscript tensor_plots.Rmd
+    $ Rscript scripts/R/tensor_plots.Rmd
     ```
     This will produce a series of plots in `img` similar to those shown below.
     
