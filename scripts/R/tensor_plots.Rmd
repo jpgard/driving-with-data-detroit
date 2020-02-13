@@ -8,10 +8,9 @@ output: html_notebook
 library(plyr)
 library(dplyr)
 
-analysis_type = 'month_year_log'
+analysis_type = 'vehicle_year_log'
 
 # read data
-# uncomment for vehicle_year analysis
 if (analysis_type == 'vehicle_year_log'){
     sd_lkp = read.csv("../../tensor-data/vehicle_year/SystemDescription_vehicle_year_lkp.csv", header = TRUE)
     vid_lkp = read.csv("../../tensor-data/vehicle_year/Unit_vehicle_year_lkp.csv", header = TRUE)
@@ -23,21 +22,21 @@ if (analysis_type == 'vehicle_year_log'){
     B = read.csv("../../tensor-data/vehicle_year/B_vehicle_year_log.txt", header = FALSE, row.names = make.names(sd_lkp$variable))
     C = read.csv("../../tensor-data/vehicle_year/C_vehicle_year_log.txt", header = FALSE)
     lambda = read.csv("../../tensor-data/vehicle_year/lambda_vehicle_year_log.txt", header = FALSE)
+    cluster_membership_matrix = read.csv("../../tensor-data/vehicle_year/vehicle_ingroup.txt", sep = " ", header = F)
 }
 
-# uncomment for month_year analysis
 if (analysis_type == 'month_year_log'){
-    sd_lkp = read.csv("./tensor-data/month_year/SystemDescription_MonthYear_lkp.csv", header = TRUE)
-    vid_lkp = read.csv("./tensor-data/month_year/Unit_MonthYear_lkp.csv", header = TRUE)
+    sd_lkp = read.csv("../../tensor-data/month_year/SystemDescription_MonthYear_lkp.csv", header = TRUE)
+    vid_lkp = read.csv("../../tensor-data/month_year/Unit_MonthYear_lkp.csv", header = TRUE)
     vehicles = read.csv("../../raw-data/vehicles.csv", header = TRUE)
     maintenance = read.csv("../../raw-data/maintenance.csv", header = TRUE)
     vehicles$Unit. = as.numeric(as.character(vehicles$Unit.))
     temp = left_join(vid_lkp, vehicles, by = c("Unit."))
-    A = read.csv("./tensor-data/month_year/A_monthyear_log.txt", header = FALSE, row.names = as.character(vid_lkp$Unit.))
-    B = read.csv("./tensor-data/month_year/B_monthyear_log.txt", header = FALSE, row.names = make.names(sd_lkp$variable))
-    C = read.csv("./tensor-data/month_year/C_monthyear_log.txt", header = FALSE)
-    lambda = read.csv("./tensor-data/month_year/lambda_monthyear_log.txt", header = FALSE)
-    cluster_membership_matrix = read.csv("./tensor-data/month_year/bgmm_ingroup.txt", sep = " ", header = F)
+    A = read.csv("../../tensor-data/month_year/A_monthyear_log.txt", header = FALSE, row.names = as.character(vid_lkp$Unit.))
+    B = read.csv("../../tensor-data/month_year/B_monthyear_log.txt", header = FALSE, row.names = make.names(sd_lkp$variable))
+    C = read.csv("../../tensor-data/month_year/C_monthyear_log.txt", header = FALSE)
+    lambda = read.csv("../../tensor-data/month_year/lambda_monthyear_log.txt", header = FALSE)
+    cluster_membership_matrix = read.csv("../../tensor-data/month_year/vehicle_ingroup.txt", sep = " ", header = F)
 }
 
 ```
@@ -104,7 +103,7 @@ for(i in seq(ncol(A))) {
      }
      # g = arrangeGrob(a_plot, b_plot, c_plot, nrow = 3, ncol = 1) 
      g = ggarrange(a_plot, b_plot, c_plot, nrow=3, common.legend = TRUE, legend = "bottom")
-     outfile = paste0('img/3_way_plots/', subfolder, '/3_way_plot_factor_update_', i, '../..', OUT_DEVICE)
+     outfile = paste0('../../img/3_way_plots/', subfolder, '/3_way_plot_factor_', i, '.', OUT_DEVICE)
      ggsave(outfile, g, width = 10.9, height = 6.6, units = "in", device = OUT_DEVICE)
  }
 ```
