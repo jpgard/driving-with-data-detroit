@@ -1,7 +1,7 @@
 import json
+import re
 
 from ddd.df_utils import generate_vehicle_maintenance_seq_df
-import re
 
 VEHICLES_FP = 'raw-data/vehicles.csv'
 MAINTENANCE_FP = 'raw-data/maintenance.csv'
