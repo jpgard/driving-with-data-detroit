@@ -9,3 +9,4 @@ img/*
 .Rhistory
 .idea/
 build/
+.DS_Store
