@@ -19,7 +19,6 @@ def main(dir):
         with open(os.path.join(dir, file), 'r') as f:
             for line in f.readlines():
                 data.append(json.loads(line))
-    import ipdb;ipdb.set_trace()
     data = shuffle(data)
     n_train = len(data)//2 # 50% of data for training
     n_val = (len(data) - n_train)//2 #25% of data for validation; other 25% for testing
