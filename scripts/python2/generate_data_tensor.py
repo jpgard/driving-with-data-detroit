@@ -7,14 +7,10 @@ $ python2 generate_data_tensor.py -td vehicle_year
 $ python2 generate_data_tensor.py -td year
 $ python2 generate_data_tensor.py -td vehicle_year --max_year 2011
 """
-
+from ddd import VEHICLES_FP, MAINTENANCE_FP, CUTOFF_YR
 from ddd.tensor_utils import *
 import argparse
 import math
-
-VEHICLES_FP = 'raw-data/vehicles.csv'
-MAINTENANCE_FP = 'raw-data/maintenance.csv'
-CUTOFF_YR = 2010
 
 
 def main(normalization=None, max_year=2017):

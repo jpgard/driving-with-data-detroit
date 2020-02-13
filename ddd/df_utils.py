@@ -5,8 +5,8 @@ import json
 import re
 
 import pandas as pd
-from scripts.python2.freq_pattern_preproc import VEHICLES_FP, MIN_YEAR, MAX_YEAR, \
-    MAINTENANCE_FP, write_vehicle_sequences_to_file
+from ddd import VEHICLES_FP, MIN_YEAR, MAX_YEAR, \
+    MAINTENANCE_FP
 
 from ddd.tensor_utils import create_time_feat
 
