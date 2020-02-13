@@ -5,26 +5,32 @@ import pandas as pd
 import itertools
 import re
 
+# The date format used in the data files.
+DATE_FORMAT = '%m/%d/%y'
+
+
 def create_time_feat(maintenance_df, type = "year", col_name = "Year_WO_Opened"):
     # create column based on year or month/year of work order open date
     if type == "year":
         # time column for year of work order open date
-        maintenance_df[col_name] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').year)
+        maintenance_df[col_name] = maintenance_df['WO Open Date'].apply(
+            lambda x: datetime.strptime(x, DATE_FORMAT).year)
     if type == "month_year":
         # time column for (one-indexed) month/year of work order open date, starting from first month/year in data
-        min_year = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').year).min()
-        maintenance_df['month'] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').month)
-        maintenance_df['year'] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').year - (min_year - 1))
+        min_year = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, DATE_FORMAT).year).min()
+        maintenance_df['month'] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, DATE_FORMAT).month)
+        maintenance_df['year'] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, DATE_FORMAT).year - (min_year - 1))
         maintenance_df[col_name] = 12*maintenance_df['year'] + maintenance_df['month']
         maintenance_df.drop(['month', 'year'], axis = 1, inplace = True)
     if type == "date":
-        maintenance_df[col_name] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+        maintenance_df[col_name] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, DATE_FORMAT))
     if type == "vehicle_year":
         # time column for year of work order open date relative to vehicle purchase year
-        maintenance_df['year_wo_opened'] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').year)
+        maintenance_df['year_wo_opened'] = maintenance_df['WO Open Date'].apply(lambda x: datetime.strptime(x, DATE_FORMAT).year)
         maintenance_df[col_name] = maintenance_df['year_wo_opened'] - maintenance_df['Year']
         maintenance_df.drop(['year_wo_opened'], axis = 1, inplace = True)
-        # drop any vehicles which had maintenance BEFORE purchase year; this is only 212 jobs
+        # drop any vehicles which had maintenance BEFORE purchase year; this means
+        # purchase year data is incorrect
         maintenance_df = maintenance_df[maintenance_df[col_name] >= 0]
     return maintenance_df
 
