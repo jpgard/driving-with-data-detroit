@@ -181,12 +181,12 @@ def compute_cluster_membership(A):
     return cluster_membership
 
 
-def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_fp, system_ingroup_matrix_fp,
-                              C_matrix_fp, time_ingroup_matrix_fp, time_colname,
-                              vehicle_lkp_fp, rgrid=None):
+def run_prism(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_fp, system_ingroup_matrix_fp,
+              C_matrix_fp, time_ingroup_matrix_fp, time_colname,
+              vehicle_lkp_fp, rgrid=None):
     """
-    Conduct bayesian differential sequence mining using the results of PARAFAC.
-    :param A_matrix_fp: path to read A matrix fmor PARAFAC.
+    Conduct PaRafac-Informed Sequence Mining (PRISM) using the results of PARAFAC.
+    :param A_matrix_fp: path to read A matrix for PARAFAC.
     :param vehicle_ingroup_matrix_fp: path to write vehicle in-group matrices.
     :param B_matrix_fp: path to read B matrix fmor PARAFAC.
     :param system_ingroup_matrix_fp: path to write system in-group matrices.
@@ -247,22 +247,22 @@ def concatenate_maintenance_sequences(seqs, start_token="<START>", end_token="<E
 
 if __name__ == "__main__":
     # # with month-year analysis
-    bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
-                              vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
-                              B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
-                              system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
-                              C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
-                              time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
-                              time_colname="vehicle_year",
-                              vehicle_lkp_fp="./tensor-data/vehicle_year/Unit_vehicle_year_lkp.csv",
-                              rgrid=(2, 14, 15))
-    bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
-                              vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
-                              B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
-                              system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt",
-                              C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
-                              time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
-                              time_colname="month_year",
-                              vehicle_lkp_fp="./tensor-data/month_year/Unit_month_year_lkp.csv",
-                              rgrid=(0, 9, 16)
-                              )
+    run_prism(A_matrix_fp="./tensor-data/vehicle_year/A_vehicle_year_log.txt",
+              vehicle_ingroup_matrix_fp="./tensor-data/vehicle_year/vehicle_ingroup.txt",
+              B_matrix_fp="./tensor-data/vehicle_year/B_vehicle_year_log.txt",
+              system_ingroup_matrix_fp="./tensor-data/vehicle_year/system_ingroup.txt",
+              C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
+              time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
+              time_colname="vehicle_year",
+              vehicle_lkp_fp="./tensor-data/vehicle_year/Unit_vehicle_year_lkp.csv",
+              rgrid=(2, 14, 15))
+    run_prism(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
+              vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
+              B_matrix_fp="./tensor-data/month_year/B_monthyear_log.txt",
+              system_ingroup_matrix_fp="./tensor-data/month_year/system_ingroup.txt",
+              C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
+              time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
+              time_colname="month_year",
+              vehicle_lkp_fp="./tensor-data/month_year/Unit_month_year_lkp.csv",
+              rgrid=(0, 9, 16)
+              )
