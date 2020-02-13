@@ -74,7 +74,7 @@ for(i in seq(ncol(A))) {
           legend.text = element_text(size = rel(0.4)), 
           legend.key.size = unit(0.15, units = "cm"), 
           legend.position=c(0.98,0.15), legend.justification=c(1,0)) + 
-    # geom_text_repel(aes(label=ifelse(A[,i] > A_THRESH, gsub("\\.+", ' ', temp$Dept.Desc), '')), nudge_y = 0.05) +
+    geom_text_repel(aes(label=ifelse(A[,i] == max(A[,i]), gsub("\\.+", ' ', temp$Dept.Desc), '')), nudge_y = 0.05) +
     ylim(0,1) + 
     ggtitle("Vehicle") + 
     labs(fill = "Department") + 
