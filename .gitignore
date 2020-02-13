@@ -4,7 +4,8 @@ freq-pattern-data
 tensor-data
 __pycache__
 *.pyc
-img
+img/*
+!img/readme
 .Rhistory
 .idea/
 build/
