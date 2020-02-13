@@ -1,4 +1,4 @@
-# usage: python freq_pattern_mine.py
+# usage: python run_prism.py
 
 from pymining import seqmining
 from ddd.df_utils import generate_vehicle_maintenance_seq_df, \

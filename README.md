@@ -53,7 +53,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
 3. Using the factor loading matrices, compute the in-group and out-groups via PRISM. Note that the PRISM scripts are written in *Python 3* due to the Bayesian modeling libraries being only available in Python 3.
 
     ``` 
-    $ python3 scripts/python3/freq_pattern_mine.py
+    $ python3 scripts/python3/run_prism.py
     ```
 
 
