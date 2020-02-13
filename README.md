@@ -1,6 +1,6 @@
-# Detroit Vehicles 
+# Driving with Data: Modeling and Forecasting Vehicle Fleet Maintenance in Detroit
 
-Note: the data used for this analysis is not publicly available and is governed by a data non-disclosure agreement with the City of Detroit Operations and Infrastructure Group. This repository contains the complete source files used to generate the graphics and analysis in the paper:
+Note: the data used for this analysis is not publicly available and is governed by a data non-disclosure agreement with the City of Detroit Operations and Infrastructure Group. This repository contains the complete source files used for the paper:
 
 ```
 Driving with Data: Modeling and Forecasting Vehicle Fleet Maintenance in Detroit
