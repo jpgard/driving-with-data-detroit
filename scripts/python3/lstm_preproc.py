@@ -44,4 +44,4 @@ def main(dir):
 
 
 if __name__ == "__main__":
-    main(dir='./freq-pattern-data/seqs')
+    main(dir='../../freq-pattern-data/seqs')

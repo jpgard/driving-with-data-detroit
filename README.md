@@ -78,7 +78,7 @@ This section describes the steps to train and evaluate the LSTM described in the
 ```$ python3 generate_vehicle_maintenance_sequences.py```
 
 2. Clean up those sequences into a format the Tensorflow code likes:
-```$ python3 lstm_preproc.py ```
+```$ python3 scripts/python3/lstm_preproc.py ```
 
 3. Train the model (note that this script is in PYTHON 2; the other scripts are in PYTHON 3!):
 ```$ python2 ptb/ptb_word_lm.py  --data_path=/path/to/output/dir/from/lstm_preproc/ ```
