@@ -12,6 +12,8 @@ https://arxiv.org/abs/1710.06839
 
 This README provides guidance on how to replicate the PARAFAC/PRISM analysis presented in our paper, along with the LSTM maintenance prediction model. The ARIMA models are currently provided in a separate repository.
 
+For the full results of our analysis on the Detroit vehicle maintenance dataset, see the [vehicle-year](img/3_way_plots/vehicle_year_log/README.md) and [month-year](img/3_way_plots/month_year_log/README.md) results pages.
+
 # Installation
 
 To replicate the "Driving with Data in Detroit" (DDD) analysis, first install the `ddd` module. The easiest way to do this is to clone the repo, create a virtual environment, and then simply run
