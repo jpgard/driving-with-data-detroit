@@ -40,7 +40,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     $ python2 scripts/python2/generate_vehicle_maintenance_sequences.py
     ```
 
-2. Run PARAFAC *this step requires MATLAB*
+2. Run PARAFAC (**this step requires a licensed MATLAB installation**)
 
     a. In MATLAB, first run the `scripts/matlab/install_tensor_toolbox.m` script to load the PARAFAC libraries (included in this repo).
     
@@ -79,7 +79,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     
     ![3way-example](img/readme/3way_monthyear_example.png)
 
-# Maintenance Prediction LSTM:
+# Maintenance Prediction LSTM
 
 This section describes the steps to train and evaluate the LSTM described in the paper for maintenance prediction. Note that the LSTM model is modified from the original code in the Tensorflow 1.x repository [here](https://github.com/tensorflow/docs/blob/master/site/en/r1/tutorials/sequences/recurrent.md). Note that TensorFlow 1.x is in *maintenance mode only* as of 2020.
 
