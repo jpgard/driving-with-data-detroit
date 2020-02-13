@@ -73,7 +73,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     b. Run `scripts/R/tensor_plots.Rmd`. This script can be run in an IDE (e.g. RStudio), or from the command line via
     
     ```
-    $ Rscript scripts/R/tensor_plots.Rmd
+    $ Rscript scripts/R/tensor_plots.R
     ```
     This will produce a series of plots in `img` similar to those shown below.
     
