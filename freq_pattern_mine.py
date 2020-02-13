@@ -256,8 +256,6 @@ def run_prism(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_fp,
         time_ingroup_matrix_fp))
     np.savetxt(time_ingroup_matrix_fp, time_ingroup_matrix)
     for r in rgrid:
-        import ipdb;
-        ipdb.set_trace()
         in_group_uids = vehicles_lookup_df.iloc[vehicle_ingroup_matrix[:, r] == 1, :][
             "Unit#"].tolist()
         in_group_systems = system_lookup_df.iloc[system_ingroup_matrix[:, r] == 1, :][
