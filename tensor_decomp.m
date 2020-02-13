@@ -5,8 +5,8 @@ clear all;close all;clc
 run install_tensor_toolbox
 % end preable
 
-% code to read MDST data
-FILENAME = 'tensor-data/vehicle_year/pre_tensor_vehicle_year_log.dat';
+% read data
+FILENAME = 'tensor-data/month_year/pre_tensor_month_year_log_2017.dat';
 cd ..;cd ..;
 data = dlmread(FILENAME, '\t');
 X = sptensor(data(:,[1 2 3]), data(:,4));
@@ -16,10 +16,10 @@ A=sparse(factors.U{1});B=sparse(factors.U{2});C=sparse(factors.U{3});
 lambda = factors.lambda;
 
 % write factor matrices
-dlmwrite("tensor-data/vehicle_year/A_vehicle_year_log.txt", full(A));
-dlmwrite("tensor-data/vehicle_year/B_vehicle_year_log.txt", full(B));
-dlmwrite("tensor-data/vehicle_year/C_vehicle_year_log.txt", full(C));
-dlmwrite("tensor-data/vehicle_year/lambda_vehicle_year_log.txt", full(lambda))
+dlmwrite("tensor-data/vehicle_year/A_month_year_log.txt", full(A));
+dlmwrite("tensor-data/vehicle_year/B_month_year_log.txt", full(B));
+dlmwrite("tensor-data/vehicle_year/C_month_year_log.txt", full(C));
+dlmwrite("tensor-data/vehicle_year/lambda_month_year_log.txt", full(lambda))
 % 
 % % create single F x time faceted plot showing each factor of C over time
 % figure
