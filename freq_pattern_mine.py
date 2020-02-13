@@ -182,7 +182,8 @@ def compute_cluster_membership(A):
 
 
 def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_fp, system_ingroup_matrix_fp,
-                              C_matrix_fp, time_ingroup_matrix_fp, time_colname, rgrid=None):
+                              C_matrix_fp, time_ingroup_matrix_fp, time_colname,
+                              vehicle_lkp_fp, rgrid=None):
     """
     Conduct bayesian differential sequence mining using the results of PARAFAC.
     :param A_matrix_fp: path to read A matrix fmor PARAFAC.
@@ -191,6 +192,7 @@ def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_f
     :param system_ingroup_matrix_fp: path to write system in-group matrices.
     :param C_matrix_fp: path to read C matrix fmor PARAFAC.
     :param time_ingroup_matrix_fp: path to write time in-group matrices.
+    :param vehicle_lkp_fp: path to vehicle lookup df; used to ensure ordering matches A matrix precisely.
     :param rgrid: grid of values to evaluate for r; by default all factors in range(R) will be evaluated.
     :return:
     """
@@ -200,7 +202,7 @@ def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_f
     n, R = A.shape
     if not rgrid:
         rgrid = [x for x in range(R)]
-    vehicles_lookup_df = get_vehicles_lookup_df()
+    vehicles_lookup_df = get_vehicles_lookup_df(vehicle_lkp_fp=vehicle_lkp_fp)
     system_lookup_df = get_system_description_lookup_df()
     vehicle_ingroup_matrix = compute_cluster_membership(A)
     system_ingroup_matrix = compute_cluster_membership(B)
@@ -213,6 +215,7 @@ def bayesian_dsm_from_parafac(A_matrix_fp, vehicle_ingroup_matrix_fp, B_matrix_f
     print("[INFO] writing time cluster membership matrix to {}".format(time_ingroup_matrix_fp))
     np.savetxt(time_ingroup_matrix_fp, time_ingroup_matrix)
     for r in rgrid:
+        import ipdb;ipdb.set_trace()
         in_group_uids = vehicles_lookup_df.iloc[vehicle_ingroup_matrix[:, r] == 1, :]["Unit#"].tolist()
         in_group_systems = system_lookup_df.iloc[system_ingroup_matrix[:, r] == 1, :]["variable"].tolist()
         in_group_times = np.argwhere(time_ingroup_matrix[:, r] == 1).flatten().tolist()
@@ -251,6 +254,7 @@ if __name__ == "__main__":
                               C_matrix_fp="./tensor-data/vehicle_year/C_vehicle_year_log.txt",
                               time_ingroup_matrix_fp="./tensor-data/vehicle_year/monthyear_ingroup.txt",
                               time_colname="vehicle_year",
+                              vehicle_lkp_fp="./tensor-data/vehicle_year/Unit_vehicle_year_lkp.csv",
                               rgrid=(2, 14, 15))
     bayesian_dsm_from_parafac(A_matrix_fp="./tensor-data/month_year/A_monthyear_log.txt",
                               vehicle_ingroup_matrix_fp="./tensor-data/month_year/vehicle_ingroup.txt",
@@ -259,5 +263,6 @@ if __name__ == "__main__":
                               C_matrix_fp="./tensor-data/month_year/C_monthyear_log.txt",
                               time_ingroup_matrix_fp="./tensor-data/month_year/monthyear_ingroup.txt",
                               time_colname="month_year",
+                              vehicle_lkp_fp="./tensor-data/month_year/Unit_month_year_lkp.csv",
                               rgrid=(0, 9, 16)
                               )

@@ -8,11 +8,29 @@ MAINTENANCE_FP = 'raw-data/maintenance.csv'
 MIN_YEAR = 2010
 MAX_YEAR = 2017
 
-def get_vehicles_lookup_df(vehicles_fp = VEHICLES_FP, min_year=MIN_YEAR, max_year=MAX_YEAR):
+def get_vehicles_lookup_df(vehicles_fp = VEHICLES_FP, vehicle_lkp_fp=None,
+                           min_year=MIN_YEAR, max_year=MAX_YEAR, unit_colname="Unit#"):
+    """
+
+    Args:
+        vehicles_fp: the CSV to read vehicles data from.
+        vehicle_lkp_fp: an optional CSV used to filter and order the units.
+        min_year: minimum year to return.
+        max_year: maximum year to return.
+
+    Returns:
+
+    """
     v = pd.read_csv(vehicles_fp)
     v = v[(v.Year >= min_year) & (v.Year <= max_year)]
     v["make_model"] = v['Make'].map(lambda x: str(x) + "_") + v['Model'].map(
         lambda x: str(x).strip().replace(' ', '_'))
+    if vehicle_lkp_fp:
+        # Sort the Unit# column in the dataframe to match the order and values in
+        # vehicle_lkp_df.
+        vehicle_lkp_df = pd.read_csv(vehicle_lkp_fp, dtype=object)
+        units_sorted = vehicle_lkp_df[unit_colname]
+        v = v.set_index(unit_colname).loc[units_sorted].reset_index()
     return v
 
 
