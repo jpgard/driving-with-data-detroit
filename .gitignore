@@ -6,6 +6,7 @@ __pycache__
 *.pyc
 img/*
 !img/readme
+!img/3_way_plots
 .Rhistory
 .idea/
 build/
