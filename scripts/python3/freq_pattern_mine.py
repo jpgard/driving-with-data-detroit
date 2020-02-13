@@ -1,7 +1,7 @@
 # usage: python freq_pattern_mine.py
 
 from pymining import seqmining
-from scripts.python2.freq_pattern_preproc import generate_vehicle_maintenance_seq_df, \
+from ddd.df_utils import generate_vehicle_maintenance_seq_df, \
     get_vehicles_lookup_df, \
     get_system_description_lookup_df
 from nltk import ngrams
