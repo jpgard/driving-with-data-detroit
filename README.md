@@ -29,7 +29,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     b. Generate the sequence data for each vehicle make/model. This will write sequence data in individual text files in `./freq-pattern-data/seqs/`.
     
     ``` 
-    $ python2 scripts/python2/freq_pattern_preproc.py
+    $ python2 scripts/python2/generate_vehicle_maintenance_sequences.py
     ```
 
 2. Run PARAFAC *this step requires MATLAB*
@@ -73,7 +73,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
 This section describes the steps to train and evaluate the LSTM described in the paper for maintenance prediction. Note that the LSTM model is modified from the original code in the Tensorflow 1.x repository [here](https://github.com/tensorflow/docs/blob/master/site/en/r1/tutorials/sequences/recurrent.md). Note that TensorFlow 1.x is in *maintenance mode only* as of 2020.
 
 1. Create the files with maintenance sequences by make/model; each line represents a unique vehicle:
-```$ python3 freq_pattern_preproc.py```
+```$ python3 generate_vehicle_maintenance_sequences.py```
 
 2. Clean up those sequences into a format the Tensorflow code likes:
 ```$ python3 lstm_preproc.py ```
