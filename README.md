@@ -34,11 +34,11 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
 
 2. Run PARAFAC *this step requires MATLAB*
 
-    a. In MATLAB, first run the `install_tensor_toolbox.m` script to load the PARAFAC libraries (included in this repo).
+    a. In MATLAB, first run the `scripts/matlab/install_tensor_toolbox.m` script to load the PARAFAC libraries (included in this repo).
     
-    b. Edit the file `tensor_decomp.m` to point to the relevant input files, and to have the correct output files. 
+    b. Edit the file `scripts/matlab/tensor_decomp.m` to point to the relevant input files, and to have the correct output files. 
     
-    c. Run `tensor_decomp.m` in MATLAB. As this script runs, you should see output of the following form:
+    c. Run `scripts/matlab/tensor_decomp.m` in MATLAB. As this script runs, you should see output of the following form:
     
     ``` 
     Nonnegative PARAFAC:
