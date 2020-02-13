@@ -21,8 +21,8 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     a. Run the preprocessing scripts to generate the 3-way data tensors needed in PARAFAC:
 
     ``` 
-    $ python2 scripts/python2/tensor_preproc.py -td month_year
-    $ python2 scripts/python2/tensor_preproc.py -td vehicle_year
+    $ python2 scripts/python2/generate_data_tensor.py -td month_year
+    $ python2 scripts/python2/generate_data_tensor.py -td vehicle_year
     ```
     This will deposit CSV files of the data in `tensor-data/`.
     
