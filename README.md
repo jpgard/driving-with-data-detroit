@@ -12,6 +12,14 @@ https://arxiv.org/abs/1710.06839
 
 This README provides guidance on how to replicate the PARAFAC/PRISM analysis presented in our paper, along with the LSTM maintenance prediction model. The ARIMA models are currently provided in a separate repository.
 
+# Installation
+
+To replicate the "Driving with Data in Detroit" (DDD) analysis, first install the `ddd` module. The easiest way to do this is to clone the repo, create a virtual environment, and then simply run
+
+    ``` 
+    $ pip3 install -e .
+    ```
+
 # PARAFAC/PRISM
 
 This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM (PaRafac-Informed Sequence Mining), and visualize the results using three-way plots.
@@ -53,7 +61,8 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
 3. Using the factor loading matrices, compute the in-group and out-groups via PRISM. Note that the PRISM scripts are written in *Python 3* due to the Bayesian modeling libraries being only available in Python 3.
 
     ``` 
-    $ python3 scripts/python3/run_prism.py
+    $ python3 scripts/python3/run_prism.py -td month_year
+   $ python3 scripts/python3/run_prism.py -td vehicle_year
     ```
 
 
