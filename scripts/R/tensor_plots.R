@@ -1,7 +1,23 @@
+# Script to generate 3-way plots from a PARAFAC analysis.
+# usage: Rscript scripts/R/tensor_plots.R --analysis_type vehicle_year_log
+
 library(plyr)
 library(dplyr)
+library("optparse")
 
-analysis_type = 'vehicle_year_log'
+option_list = list(
+  make_option("--analysis_type", type="character", default=NULL, 
+              help="analysis type; either vehicle_year_log or month_year_log",
+              metavar="character"),
+  make_option("--unused_out_dir", type="character", default=NULL, 
+              help="unused output directory name",
+              metavar="character")
+)
+
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
+
+analysis_type = opt$analysis_type
 
 # read data
 if (analysis_type == 'vehicle_year_log'){

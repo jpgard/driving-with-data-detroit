@@ -3,6 +3,7 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+# THIS NOTEBOOK IS DEPRECATED, use `tensor_plots.R` instead.
 
 ```{r}
 library(plyr)
