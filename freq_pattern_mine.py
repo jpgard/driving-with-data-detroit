@@ -1,13 +1,11 @@
 # usage: python freq_pattern_mine.py
 
-import os
 from pymining import seqmining
-from freq_pattern_preproc import generate_vehicle_maintenance_seq_df, \
+from ddd.freq_pattern_preproc import generate_vehicle_maintenance_seq_df, \
     get_vehicles_lookup_df, \
     get_system_description_lookup_df
 from nltk import ngrams
 import pandas as pd
-import math
 from statsmodels.stats.proportion import proportions_ztest
 import numpy as np
 from sklearn.mixture import BayesianGaussianMixture
@@ -15,9 +13,7 @@ import matplotlib
 from collections import Counter
 
 matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 import pymc3 as pm
-import theano.tensor as tt
 import time
 
 # set value for i_ratio when sequence never occurs for other vehicles

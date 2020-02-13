@@ -8,10 +8,7 @@ $ python2 tensor_preproc.py -td year
 $ python2 tensor_preproc.py -td vehicle_year --max_year 2011
 """
 
-import pandas as pd
-import scipy.io
-from tensor_utils import *
-import string
+from ddd.tensor_utils import *
 import argparse
 import math
 
