@@ -16,9 +16,9 @@ This README provides guidance on how to replicate the PARAFAC/PRISM analysis pre
 
 To replicate the "Driving with Data in Detroit" (DDD) analysis, first install the `ddd` module. The easiest way to do this is to clone the repo, create a virtual environment, and then simply run
 
-    ``` 
-    $ pip3 install -e .
-    ```
+``` 
+$ pip3 install -e .
+```
 
 # PARAFAC/PRISM
 
