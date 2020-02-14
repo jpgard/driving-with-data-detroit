@@ -35,16 +35,16 @@ if (analysis_type == 'vehicle_year_log'){
 }
 
 if (analysis_type == 'month_year_log'){
-  sd_lkp = read.csv("./tensor-data/month_year/SystemDescription_MonthYear_lkp.csv", header = TRUE)
-  vid_lkp = read.csv("./tensor-data/month_year/Unit_MonthYear_lkp.csv", header = TRUE)
+  sd_lkp = read.csv("./tensor-data/month_year/SystemDescription_month_year_lkp.csv", header = TRUE)
+  vid_lkp = read.csv("./tensor-data/month_year/Unit_month_year_lkp.csv", header = TRUE)
   vehicles = read.csv("./raw-data/vehicles.csv", header = TRUE)
   maintenance = read.csv("./raw-data/maintenance.csv", header = TRUE)
   vehicles$Unit. = as.numeric(as.character(vehicles$Unit.))
   temp = left_join(vid_lkp, vehicles, by = c("Unit."))
-  A = read.csv("./tensor-data/month_year/A_monthyear_log.txt", header = FALSE, row.names = as.character(vid_lkp$Unit.))
-  B = read.csv("./tensor-data/month_year/B_monthyear_log.txt", header = FALSE, row.names = make.names(sd_lkp$variable))
-  C = read.csv("./tensor-data/month_year/C_monthyear_log.txt", header = FALSE)
-  lambda = read.csv("./tensor-data/month_year/lambda_monthyear_log.txt", header = FALSE)
+  A = read.csv("./tensor-data/month_year/A_month_year_log.txt", header = FALSE, row.names = as.character(vid_lkp$Unit.))
+  B = read.csv("./tensor-data/month_year/B_month_year_log.txt", header = FALSE, row.names = make.names(sd_lkp$variable))
+  C = read.csv("./tensor-data/month_year/C_month_year_log.txt", header = FALSE)
+  lambda = read.csv("./tensor-data/month_year/lambda_month_year_log.txt", header = FALSE)
   cluster_membership_matrix = read.csv("./tensor-data/month_year/vehicle_ingroup.txt", sep = " ", header = F)
 }
 
