@@ -26,7 +26,7 @@ $ pip3 install -e .
 
 This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM (PaRafac-Informed Sequence Mining), and visualize the results using three-way plots.
 
-1. Data preprocessing
+1. **Data preprocessing**
 
     a. Run the preprocessing scripts to generate the 3-way data tensors needed in PARAFAC:
 
@@ -42,7 +42,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     $ python2 scripts/python2/generate_vehicle_maintenance_sequences.py
     ```
 
-2. Run PARAFAC (**this step requires a licensed MATLAB installation**)
+2. **Run PARAFAC (this step requires a licensed MATLAB installation)**
 
     a. In MATLAB, first run the `scripts/matlab/install_tensor_toolbox.m` script to load the PARAFAC libraries (included in this repo).
     
@@ -60,7 +60,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
      ... 
    ```
 
-3. Using the factor loading matrices, compute the in-group and out-groups via PRISM. Note that the PRISM scripts are written in *Python 3* due to the Bayesian modeling libraries being only available in Python 3.
+3. **Using the factor loading matrices, compute the in-group and out-groups via PRISM.** Note that the PRISM scripts are written in *Python 3* due to the Bayesian modeling libraries being only available in Python 3.
 
     ``` 
     $ python3 scripts/python3/run_prism.py -td month_year
@@ -68,7 +68,7 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
     ```
 
 
-4. Generate the 3-way plots in R using `scripts/R/tensor_plots.Rmd`. 
+4. **Generate the 3-way plots in R using `scripts/R/tensor_plots.Rmd`.** 
 
     a. Edit the file `scripts/R/tensor_plots.Rmd` to point to the correct factor loading matrices (by default these should be correct) and set the `analysis_type` variable to either `vehicle_year_log` or `month_year_log` as desired.
     
@@ -85,21 +85,17 @@ This section shows the steps to preprocess a dataset, conduct PARAFAC and PRISM 
 
 This section describes the steps to train and evaluate the LSTM described in the paper for maintenance prediction. Note that the LSTM model is modified from the original code in the Tensorflow 1.x repository [here](https://github.com/tensorflow/docs/blob/master/site/en/r1/tutorials/sequences/recurrent.md). Note that TensorFlow 1.x is in *maintenance mode only* as of 2020.
 
-1. Create the files with maintenance sequences by make/model; each line represents a unique vehicle:
+1. **Create the files with maintenance sequences by make/model.** Each line in the file represents a unique vehicle; each file represents a specific make/model.
 ```$ python3 generate_vehicle_maintenance_sequences.py```
 
-2. Clean up those sequences into a format the Tensorflow code likes:
+2. **Preprocess the sequences specifically to match the input format for the TensorFlow script.**
 ```$ python3 scripts/python3/lstm_preproc.py ```
 
-3. Train the model (note that this script is in PYTHON 2; the other scripts are in PYTHON 3!):
+3. **Train the model.** Note that this script is in PYTHON 2; the other scripts are in PYTHON 3!
 ```$ python2 ptb/ptb_word_lm.py  --data_path=/path/to/output/dir/from/lstm_preproc/ ```
 
     ```
-    2017-06-22 14:16:23.243476: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.
-    2017-06-22 14:16:23.243503: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX instructions, but these are available on your machine and could speed up CPU computations.
-    2017-06-22 14:16:23.243508: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX2 instructions, but these are available on your machine and could speed up CPU computations.
-    2017-06-22 14:16:23.243513: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use FMA instructions, but these are available on your machine and could speed up CPU computations.
-    WARNING:tensorflow:Standard services need a 'logdir' passed to the SessionManager
+    ...
     Epoch: 1 Learning rate: 1.000
     Epoch: 1 Train Perplexity: 593.959
     Epoch: 1 Valid Perplexity: 114.834
