@@ -66,7 +66,7 @@ pytest-cov==2.6.1
 pytest-mock==1.10.1
 python-dateutil==2.8.1
 pytz==2018.9
-PyYAML==3.13
+PyYAML==5.1
 requests==2.21.0
 scandir==1.9.0
 scipy==1.2.3
