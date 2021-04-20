@@ -52,7 +52,7 @@ ply==3.11
 posix-ipc==1.0.4
 prompt-toolkit==1.0.18
 ptyprocess==0.6.0
-py==1.8.0
+py==1.10.0
 py-cpuinfo==4.0.0
 pycodestyle==2.5.0
 pycparser==2.19
