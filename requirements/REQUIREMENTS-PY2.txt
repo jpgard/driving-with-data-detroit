@@ -37,7 +37,7 @@ mccabe==0.6.1
 mock==2.0.0
 more-itertools==5.0.0
 nervananeon==2.6.0
-numpy==1.16.2
+numpy==1.22.0
 packaging==19.0
 pandas==0.24.2
 pandoc==1.0.2
